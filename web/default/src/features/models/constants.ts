@@ -172,6 +172,21 @@ export const ENDPOINT_TEMPLATES: Record<
   'audio-transcription': { path: '/v1/audio/transcriptions', method: 'POST' },
 }
 
+export const ENDPOINT_DISPLAY_NAMES: Record<string, string> = {
+  openai: 'Chat Completions',
+  'openai-response': 'Responses',
+  'openai-response-compact': 'Responses (Compact)',
+  anthropic: 'Messages (Anthropic)',
+  gemini: 'Gemini Generate',
+  'jina-rerank': 'Rerank',
+  'image-generation': 'Image Generation',
+  'image-edit': 'Image Edit',
+  embeddings: 'Embeddings',
+  'audio-speech': 'Text to Speech',
+  'audio-transcription': 'Speech to Text',
+  'openai-video': 'Video Generation',
+}
+
 // ============================================================================
 // Sync Locale Options
 // ============================================================================

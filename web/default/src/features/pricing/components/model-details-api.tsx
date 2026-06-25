@@ -44,6 +44,7 @@ import {
   formatRateLimit,
   type SupportedParameter,
 } from '../lib/mock-stats'
+import { ENDPOINT_DISPLAY_NAMES } from '@/features/models/constants'
 import { replaceModelInPath } from '../lib/model-helpers'
 import type { PricingModel } from '../types'
 
@@ -694,21 +695,19 @@ function CodeSamplesSection(props: {
       <SectionTitle icon={ScrollText}>{t('Code samples')}</SectionTitle>
 
       <div className='flex flex-wrap items-center gap-2'>
-        {endpoints.length > 1 && (
-          <Tabs value={endpointType} onValueChange={setEndpointType}>
-            <TabsList className='bg-muted/40 h-8 p-0.5'>
-              {endpoints.map((ep) => (
-                <TabsTrigger
-                  key={ep.type}
-                  value={ep.type}
-                  className='h-7 px-2.5 text-xs'
-                >
-                  {ep.type}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        )}
+        <Tabs value={endpointType} onValueChange={setEndpointType}>
+          <TabsList className='bg-muted/40 h-8 p-0.5'>
+            {endpoints.map((ep) => (
+              <TabsTrigger
+                key={ep.type}
+                value={ep.type}
+                className='h-7 px-2.5 text-xs'
+              >
+                {ENDPOINT_DISPLAY_NAMES[ep.type] || ep.type}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
 
         <Tabs
           value={lang}

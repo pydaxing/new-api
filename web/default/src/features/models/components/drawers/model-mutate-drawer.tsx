@@ -80,7 +80,7 @@ import { normalizeJsonString } from '@/features/system-settings/models/utils'
 import type { ModelSettings } from '@/features/system-settings/types'
 import { safeJsonParse } from '@/features/system-settings/utils/json-parser'
 import { createModel, updateModel, getModel, getVendors } from '../../api'
-import { getNameRuleOptions, ENDPOINT_TEMPLATES } from '../../constants'
+import { getNameRuleOptions, ENDPOINT_TEMPLATES, ENDPOINT_DISPLAY_NAMES } from '../../constants'
 import { modelsQueryKeys, vendorsQueryKeys, parseModelTags } from '../../lib'
 import type { Model } from '../../types'
 
@@ -855,7 +855,7 @@ export function ModelMutateDrawer({
                 <Select<string>
                   items={Object.keys(ENDPOINT_TEMPLATES).map((key) => ({
                       value: key,
-                      label: key,
+                      label: ENDPOINT_DISPLAY_NAMES[key] || key,
                     }))}
                   onValueChange={(v) =>
                     v !== null && handleFillEndpointTemplate(v)
@@ -868,7 +868,7 @@ export function ModelMutateDrawer({
                     <SelectGroup>
                       {Object.keys(ENDPOINT_TEMPLATES).map((key) => (
                         <SelectItem key={key} value={key}>
-                          {key}
+                          {ENDPOINT_DISPLAY_NAMES[key] || key}
                         </SelectItem>
                       ))}
                     </SelectGroup>

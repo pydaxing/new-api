@@ -540,12 +540,15 @@ func chooseStatus(primary, fallback int) int {
 }
 
 // SyncUpstreamPreview 预览上游与本地的差异（仅用于弹窗选择）
-// channelPricingModel represents a single model entry from /api/pricing response
+// channelPricingModel represents a single model entry from /api/pricing response.
+// Supports both: direct "supplier" string OR "vendor_id" with separate vendors array.
 type channelPricingModel struct {
 	ModelName   string          `json:"model_name"`
 	Description string          `json:"description"`
+	Supplier    string          `json:"supplier"`
 	VendorID    int             `json:"vendor_id"`
 	Tags        json.RawMessage `json:"tags"`
+	Endpoints   json.RawMessage `json:"endpoints"`
 }
 
 type channelPricingVendor struct {
@@ -566,6 +569,57 @@ type channelPricingResult struct {
 
 type syncFromChannelsRequest struct {
 	ChannelIDs []int `json:"channel_ids"`
+}
+
+// parseChannelEndpoints converts upstream endpoints field to local JSON format.
+// Upstream formats: ["chat","responses"] or {"openai":{"path":"/v1/...", "method":"POST"}}
+func parseChannelEndpoints(raw json.RawMessage) string {
+	if len(raw) == 0 || string(raw) == "null" {
+		return ""
+	}
+	// Try as array of strings like ["chat", "responses"]
+	var arr []string
+	if err := json.Unmarshal(raw, &arr); err == nil && len(arr) > 0 {
+		endpointMap := make(map[string]string, len(arr))
+		for _, ep := range arr {
+			switch ep {
+			case "chat":
+				endpointMap["openai"] = "/v1/chat/completions"
+			case "responses":
+				endpointMap["openai-response"] = "/v1/responses"
+			case "embeddings":
+				endpointMap["embeddings"] = "/v1/embeddings"
+			case "image-generation", "images":
+				endpointMap["image-generation"] = "/v1/images/generations"
+			case "image-edit":
+				endpointMap["image-edit"] = "/v1/images/edits"
+			case "audio-speech", "tts":
+				endpointMap["audio-speech"] = "/v1/audio/speech"
+			case "audio-transcription", "stt":
+				endpointMap["audio-transcription"] = "/v1/audio/transcriptions"
+			default:
+				endpointMap[ep] = ""
+			}
+		}
+		// Build JSON: {"openai": "/v1/chat/completions", ...}
+		result := make(map[string]interface{})
+		for k, v := range endpointMap {
+			if v != "" {
+				result[k] = v
+			}
+		}
+		if len(result) > 0 {
+			buf, _ := json.Marshal(result)
+			return string(buf)
+		}
+		return ""
+	}
+	// Try as object (already in local format)
+	var obj map[string]interface{}
+	if err := json.Unmarshal(raw, &obj); err == nil && len(obj) > 0 {
+		return string(raw)
+	}
+	return ""
 }
 
 func parseChannelTags(raw json.RawMessage) string {
@@ -741,7 +795,10 @@ func PreviewSyncFromChannels(c *gin.Context) {
 		if m, ok := pricingMeta[name]; ok {
 			item.Description = m.Description
 			item.Tags = parseChannelTags(m.Tags)
-			if m.VendorID > 0 {
+			// Supplier: prefer direct string field, fallback to vendor_id mapping
+			if m.Supplier != "" {
+				item.Supplier = m.Supplier
+			} else if m.VendorID > 0 {
 				item.Supplier = upstreamVendorMap[m.VendorID]
 			}
 		}
@@ -873,10 +930,11 @@ func SyncFromChannels(c *gin.Context) {
 		if m, hasMeta := pricingMeta[name]; hasMeta {
 			mi.Description = m.Description
 			mi.Tags = parseChannelTags(m.Tags)
+			mi.Endpoints = parseChannelEndpoints(m.Endpoints)
 
-			// Resolve vendor from upstream vendor_id
-			supplierName := ""
-			if m.VendorID > 0 {
+			// Resolve vendor: prefer direct Supplier string, fallback to VendorID mapping
+			supplierName := m.Supplier
+			if supplierName == "" && m.VendorID > 0 {
 				supplierName = upstreamVendorMap[m.VendorID]
 			}
 			if supplierName != "" {
@@ -910,10 +968,72 @@ func SyncFromChannels(c *gin.Context) {
 		}
 	}
 
+	// Step 5: Fill missing fields from official upstream repository
+	filledCount := 0
+	if createdCount > 0 {
+		var needFill []model.Model
+		_ = model.DB.Where("model_name IN ? AND (description = '' OR tags = '' OR vendor_id = 0)",
+			createdList).Find(&needFill).Error
+
+		if len(needFill) > 0 {
+			modelsURL, vendorsURL := getUpstreamURLs("")
+			var modelsEnv upstreamEnvelope[upstreamModel]
+			var vendorsEnv upstreamEnvelope[upstreamVendor]
+			_ = fetchJSON(ctx, modelsURL, &modelsEnv)
+			_ = fetchJSON(ctx, vendorsURL, &vendorsEnv)
+
+			officialByName := make(map[string]upstreamModel, len(modelsEnv.Data))
+			for _, m := range modelsEnv.Data {
+				if m.ModelName != "" {
+					officialByName[m.ModelName] = m
+				}
+			}
+			vendorByName := make(map[string]upstreamVendor, len(vendorsEnv.Data))
+			for _, v := range vendorsEnv.Data {
+				if v.Name != "" {
+					vendorByName[v.Name] = v
+				}
+			}
+
+			for _, local := range needFill {
+				up, ok := officialByName[local.ModelName]
+				if !ok {
+					continue
+				}
+				needUpdate := false
+				if strings.TrimSpace(local.Description) == "" && strings.TrimSpace(up.Description) != "" {
+					local.Description = up.Description
+					needUpdate = true
+				}
+				if strings.TrimSpace(local.Tags) == "" && strings.TrimSpace(up.Tags) != "" {
+					local.Tags = up.Tags
+					needUpdate = true
+				}
+				if strings.TrimSpace(local.Icon) == "" && strings.TrimSpace(up.Icon) != "" {
+					local.Icon = up.Icon
+					needUpdate = true
+				}
+				if local.VendorID == 0 && up.VendorName != "" {
+					vid := ensureVendorID(up.VendorName, vendorByName, vendorIDCache, &skippedCount)
+					if vid > 0 {
+						local.VendorID = vid
+						needUpdate = true
+					}
+				}
+				if needUpdate {
+					if err := model.DB.Save(&local).Error; err == nil {
+						filledCount++
+					}
+				}
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
 			"created_models": createdCount,
+			"filled_models":  filledCount,
 			"skipped_models": skippedCount,
 			"created_list":   createdList,
 			"total_fetched":  len(pricingMeta),
