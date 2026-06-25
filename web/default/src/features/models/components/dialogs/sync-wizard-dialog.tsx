@@ -73,17 +73,10 @@ export function SyncWizardDialog({
 
   useEffect(() => {
     if (open) {
-      const preferredSource = SYNC_SOURCE_OPTIONS.find(
-        (option) => option.value === syncWizardOptions.source
-      )
-      setSource(
-        preferredSource && !preferredSource.disabled
-          ? (preferredSource.value as SyncSource)
-          : 'official'
-      )
+      setSource('official')
       setSelectedChannelIds([])
     }
-  }, [open, syncWizardOptions, SYNC_SOURCE_OPTIONS])
+  }, [open])
 
   const handleSync = async () => {
     if (source === 'channels') {
