@@ -12,7 +12,7 @@
 
 核心流程：
 1. 提交代码 → 打 tag（`vX.Y.Z-pydaxing`）→ 推送触发 GitHub Actions 构建
-2. 用 `gh run watch` 等待构建完成
+2. Actions 会同时构建 Linux/macOS/Windows 三个版本，**只需关注 Linux 构建完成即可**（不用等其他平台）
 3. 本地 `gh release download` 下载二进制到 `/tmp`
 4. `sshpass + scp` 上传到服务器
 5. `sshpass + ssh` 执行停服→替换→启动→验证

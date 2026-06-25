@@ -389,7 +389,50 @@ func SyncUpstreamModels(c *gin.Context) {
 		}
 	}
 
-	// 4) 处理可选覆盖（更新本地已有模型的差异字段）
+	// 4) 补全已存在模型的空字段（用上游数据补全 description/tags/vendor/icon，不覆盖已有值）
+	var existingModels []model.Model
+	_ = model.DB.Where("model_name IN ?", func() []string {
+		names := make([]string, 0, len(modelByName))
+		for n := range modelByName {
+			names = append(names, n)
+		}
+		return names
+	}()).Find(&existingModels).Error
+
+	filledModels := 0
+	for _, local := range existingModels {
+		up, ok := modelByName[local.ModelName]
+		if !ok {
+			continue
+		}
+		needUpdate := false
+		if strings.TrimSpace(local.Description) == "" && strings.TrimSpace(up.Description) != "" {
+			local.Description = up.Description
+			needUpdate = true
+		}
+		if strings.TrimSpace(local.Tags) == "" && strings.TrimSpace(up.Tags) != "" {
+			local.Tags = up.Tags
+			needUpdate = true
+		}
+		if strings.TrimSpace(local.Icon) == "" && strings.TrimSpace(up.Icon) != "" {
+			local.Icon = up.Icon
+			needUpdate = true
+		}
+		if local.VendorID == 0 && up.VendorName != "" {
+			vendorID := ensureVendorID(up.VendorName, vendorByName, vendorIDCache, &createdVendors)
+			if vendorID > 0 {
+				local.VendorID = vendorID
+				needUpdate = true
+			}
+		}
+		if needUpdate {
+			if err := model.DB.Save(&local).Error; err == nil {
+				filledModels++
+			}
+		}
+	}
+
+	// 5) 处理可选覆盖（更新本地已有模型的差异字段）
 	if len(req.Overwrite) > 0 {
 		// vendorIDCache 已用于创建阶段，可复用
 		for _, ow := range req.Overwrite {
@@ -456,6 +499,7 @@ func SyncUpstreamModels(c *gin.Context) {
 			"created_models":  createdModels,
 			"created_vendors": createdVendors,
 			"updated_models":  updatedModels,
+			"filled_models":   filledModels,
 			"skipped_models":  skipped,
 			"created_list":    createdList,
 			"updated_list":    updatedList,
@@ -498,24 +542,56 @@ func chooseStatus(primary, fallback int) int {
 // SyncUpstreamPreview 预览上游与本地的差异（仅用于弹窗选择）
 // channelPricingModel represents a single model entry from /api/pricing response
 type channelPricingModel struct {
-	ModelName   string `json:"model_name"`
-	Description string `json:"description"`
-	Supplier    string `json:"supplier"`
-	Tags        []struct {
-		Name string `json:"name"`
-	} `json:"tags"`
+	ModelName   string          `json:"model_name"`
+	Description string          `json:"description"`
+	VendorID    int             `json:"vendor_id"`
+	Tags        json.RawMessage `json:"tags"`
+}
+
+type channelPricingVendor struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
 
 type channelPricingResponse struct {
-	Success bool                  `json:"success"`
-	Data    []channelPricingModel `json:"data"`
+	Success bool                   `json:"success"`
+	Data    []channelPricingModel  `json:"data"`
+	Vendors []channelPricingVendor `json:"vendors"`
+}
+
+type channelPricingResult struct {
+	Models    []channelPricingModel
+	VendorMap map[int]string
 }
 
 type syncFromChannelsRequest struct {
 	ChannelIDs []int `json:"channel_ids"`
 }
 
-func fetchChannelPricing(ctx context.Context, baseURL, key string) ([]channelPricingModel, error) {
+func parseChannelTags(raw json.RawMessage) string {
+	if len(raw) == 0 || string(raw) == "null" {
+		return ""
+	}
+	var str string
+	if err := json.Unmarshal(raw, &str); err == nil {
+		return str
+	}
+	var arr []struct {
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal(raw, &arr); err == nil {
+		names := make([]string, 0, len(arr))
+		for _, t := range arr {
+			if t.Name != "" {
+				names = append(names, t.Name)
+			}
+		}
+		return strings.Join(names, ",")
+	}
+	return ""
+}
+
+func fetchChannelPricing(ctx context.Context, baseURL, key string) (*channelPricingResult, error) {
 	url := strings.TrimRight(baseURL, "/") + "/api/pricing"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -541,7 +617,16 @@ func fetchChannelPricing(ctx context.Context, baseURL, key string) ([]channelPri
 	if err := common.Unmarshal(body, &result); err != nil {
 		return nil, err
 	}
-	return result.Data, nil
+	vendorMap := make(map[int]string, len(result.Vendors))
+	for _, v := range result.Vendors {
+		if v.ID > 0 && v.Name != "" {
+			vendorMap[v.ID] = v.Name
+		}
+	}
+	return &channelPricingResult{
+		Models:    result.Data,
+		VendorMap: vendorMap,
+	}, nil
 }
 
 // PreviewSyncFromChannels previews models that would be imported from channel /api/pricing endpoints.
@@ -616,16 +701,22 @@ func PreviewSyncFromChannels(c *gin.Context) {
 	}
 
 	pricingMeta := make(map[string]channelPricingModel)
+	upstreamVendorMap := make(map[int]string)
 	for _, ch := range channels {
 		baseURL := ch.GetBaseURL()
 		if baseURL == "" {
 			continue
 		}
-		models, fetchErr := fetchChannelPricing(ctx, baseURL, ch.Key)
+		result, fetchErr := fetchChannelPricing(ctx, baseURL, ch.Key)
 		if fetchErr != nil {
 			continue
 		}
-		for _, m := range models {
+		for id, name := range result.VendorMap {
+			if _, exists := upstreamVendorMap[id]; !exists {
+				upstreamVendorMap[id] = name
+			}
+		}
+		for _, m := range result.Models {
 			if m.ModelName == "" {
 				continue
 			}
@@ -649,14 +740,10 @@ func PreviewSyncFromChannels(c *gin.Context) {
 		item := previewItem{ModelName: name}
 		if m, ok := pricingMeta[name]; ok {
 			item.Description = m.Description
-			item.Supplier = m.Supplier
-			tags := make([]string, 0, len(m.Tags))
-			for _, t := range m.Tags {
-				if t.Name != "" {
-					tags = append(tags, t.Name)
-				}
+			item.Tags = parseChannelTags(m.Tags)
+			if m.VendorID > 0 {
+				item.Supplier = upstreamVendorMap[m.VendorID]
 			}
-			item.Tags = strings.Join(tags, ",")
 		}
 		missing = append(missing, item)
 	}
@@ -744,16 +831,22 @@ func SyncFromChannels(c *gin.Context) {
 	}
 
 	pricingMeta := make(map[string]channelPricingModel)
+	upstreamVendorMap := make(map[int]string)
 	for _, ch := range channels {
 		baseURL := ch.GetBaseURL()
 		if baseURL == "" {
 			continue
 		}
-		models, fetchErr := fetchChannelPricing(ctx, baseURL, ch.Key)
+		result, fetchErr := fetchChannelPricing(ctx, baseURL, ch.Key)
 		if fetchErr != nil {
 			continue
 		}
-		for _, m := range models {
+		for id, name := range result.VendorMap {
+			if _, exists := upstreamVendorMap[id]; !exists {
+				upstreamVendorMap[id] = name
+			}
+		}
+		for _, m := range result.Models {
 			if m.ModelName == "" {
 				continue
 			}
@@ -779,35 +872,31 @@ func SyncFromChannels(c *gin.Context) {
 
 		if m, hasMeta := pricingMeta[name]; hasMeta {
 			mi.Description = m.Description
+			mi.Tags = parseChannelTags(m.Tags)
 
-			// Build tags string
-			tags := make([]string, 0, len(m.Tags))
-			for _, t := range m.Tags {
-				if t.Name != "" {
-					tags = append(tags, t.Name)
-				}
+			// Resolve vendor from upstream vendor_id
+			supplierName := ""
+			if m.VendorID > 0 {
+				supplierName = upstreamVendorMap[m.VendorID]
 			}
-			mi.Tags = strings.Join(tags, ",")
-
-			// Resolve vendor
-			if m.Supplier != "" {
-				if id, ok := vendorIDCache[m.Supplier]; ok {
+			if supplierName != "" {
+				if id, ok := vendorIDCache[supplierName]; ok {
 					mi.VendorID = id
 				} else {
 					vendorID := 0
 					var existing model.Vendor
-					if err := model.DB.Where("name = ?", m.Supplier).First(&existing).Error; err == nil {
+					if err := model.DB.Where("name = ?", supplierName).First(&existing).Error; err == nil {
 						vendorID = existing.Id
 					} else {
 						v := &model.Vendor{
-							Name:   m.Supplier,
+							Name:   supplierName,
 							Status: 1,
 						}
 						if err := v.Insert(); err == nil {
 							vendorID = v.Id
 						}
 					}
-					vendorIDCache[m.Supplier] = vendorID
+					vendorIDCache[supplierName] = vendorID
 					mi.VendorID = vendorID
 				}
 			}
