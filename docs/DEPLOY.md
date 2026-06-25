@@ -43,91 +43,130 @@ git push origin main
 
 构建由 `.github/workflows/release.yml` 定义，触发条件：push tag 或手动 workflow_dispatch。
 
+### 2.1 版本号命名规则
+
+格式：`vX.Y.Z-pydaxing`
+
+| 级别 | 场景 | 示例 |
+|------|------|------|
+| patch（Z） | 小改动、文案修改、bug fix | `v0.1.1-pydaxing` |
+| minor（Y） | 新功能、较大改动 | `v0.2.0-pydaxing` |
+| major（X） | 重大架构变更、不兼容更新 | `v1.0.0-pydaxing` |
+
+### 2.2 打 Tag 并推送
+
 ```bash
-# 确定新版本号（递增，格式 vX.Y.Z-pydaxing）
-git tag v0.2.0-pydaxing
-git push origin v0.2.0-pydaxing
+# 查看当前最新 tag
+git tag --list 'v*-pydaxing' --sort=-v:refname | head -5
+
+# 打新 tag（根据改动级别递增版本号）
+git tag v0.1.1-pydaxing
+git push origin v0.1.1-pydaxing
 ```
 
-等待 GitHub Actions 完成构建（约 3-5 分钟），构建产物会出现在 GitHub Releases 页面：
+### 2.3 验证构建状态
+
+```bash
+# 查看最近的构建
+gh run list --repo pydaxing/new-api --limit 3
+
+# 实时监控构建进度（会等到完成）
+gh run watch <run-id> --repo pydaxing/new-api --exit-status
+```
+
+等待构建完成（约 5-8 分钟），构建产物会出现在 GitHub Releases 页面：
 `https://github.com/pydaxing/new-api/releases`
 
-产物文件名格式：`new-api-v0.2.0-pydaxing`（Linux amd64 二进制）
+产物文件名格式：`new-api-v0.1.1-pydaxing`（Linux amd64 二进制）
 
 ---
 
-## 三、在服务器下载新版本
+## 三、部署到服务器
 
-### 3.1 SSH 连接服务器
+### 方式一：本地下载 + scp 上传（推荐，速度快）
+
+国内服务器直连 GitHub 很慢，推荐在本地下载后通过 scp 传到服务器。
+
+#### 3.1 本地下载二进制
 
 ```bash
-ssh root@101.201.59.92
-# 密码: Al017830
+TAG=v0.1.1-pydaxing
+
+# 通过 gh CLI 下载（需要 GitHub 认证）
+gh release download ${TAG} --repo pydaxing/new-api --pattern "new-api-${TAG}" --dir /tmp
 ```
 
-### 3.2 下载二进制
+#### 3.2 上传到服务器
 
 ```bash
+sshpass -p 'Al017830' scp -o StrictHostKeyChecking=no /tmp/new-api-${TAG} root@101.201.59.92:/opt/new-api/new-api-new
+```
+
+#### 3.3 SSH 执行部署
+
+```bash
+sshpass -p 'Al017830' ssh -o StrictHostKeyChecking=no root@101.201.59.92 \
+  'cd /opt/new-api && systemctl stop new-api && chmod +x new-api-new && mv new-api-new new-api && systemctl start new-api && systemctl status new-api --no-pager'
+```
+
+### 方式二：服务器直接下载（备选，依赖代理稳定性）
+
+SSH 到服务器后执行：
+
+```bash
+TAG=v0.1.1-pydaxing
 cd /opt/new-api
-
-# 停止服务
 systemctl stop new-api
-
-# 下载新版本（替换 TAG 为实际版本号）
-TAG=v0.2.0-pydaxing
 wget https://ghfast.top/https://github.com/pydaxing/new-api/releases/download/${TAG}/new-api-${TAG} -O new-api-new
-
-# 赋予执行权限
 chmod +x new-api-new
-
-# 替换旧二进制
 mv new-api-new new-api
-
-# 启动服务
 systemctl start new-api
 ```
 
-> **注意**: 使用 `ghfast.top` 作为 GitHub 下载代理，国内服务器直连 GitHub 很慢。
 > 如果 ghfast.top 不可用，可尝试其他镜像：`gh-proxy.com`、`mirror.ghproxy.com` 等。
 
-### 3.3 验证服务状态
+---
+
+## 四、验证部署
 
 ```bash
-# 检查服务是否正常运行
-systemctl status new-api
+# 检查服务状态
+sshpass -p 'Al017830' ssh root@101.201.59.92 'systemctl status new-api --no-pager'
 
-# 测试本地访问
-curl -I http://localhost:3000
+# 测试本地端口
+sshpass -p 'Al017830' ssh root@101.201.59.92 'curl -sI http://localhost:3000 | head -5'
 ```
 
-确认返回 `HTTP/1.1 200 OK` 即表示部署成功。
-
-浏览器访问 https://pydaxing.com 确认页面正常。
+确认返回 `HTTP/1.1 200 OK` 后，浏览器访问 https://pydaxing.com 确认页面正常。
 
 ---
 
-## 四、完整命令速查（一键更新）
+## 五、完整命令速查（一键更新）
 
-在服务器上执行：
+在本地机器上依次执行：
 
 ```bash
-TAG=v0.2.0-pydaxing && \
-systemctl stop new-api && \
-cd /opt/new-api && \
-wget https://ghfast.top/https://github.com/pydaxing/new-api/releases/download/${TAG}/new-api-${TAG} -O new-api-new && \
-chmod +x new-api-new && \
-mv new-api-new new-api && \
-systemctl start new-api && \
-systemctl status new-api
+# 设置版本号
+TAG=v0.1.1-pydaxing
+
+# 1. 下载二进制到本地
+gh release download ${TAG} --repo pydaxing/new-api --pattern "new-api-${TAG}" --dir /tmp
+
+# 2. 上传到服务器
+sshpass -p 'Al017830' scp -o StrictHostKeyChecking=no /tmp/new-api-${TAG} root@101.201.59.92:/opt/new-api/new-api-new
+
+# 3. SSH 部署：停服 → 替换 → 启动 → 验证
+sshpass -p 'Al017830' ssh -o StrictHostKeyChecking=no root@101.201.59.92 \
+  'cd /opt/new-api && systemctl stop new-api && chmod +x new-api-new && mv new-api-new new-api && systemctl start new-api && systemctl status new-api --no-pager'
 ```
 
 ---
 
-## 五、服务器配置详情（已部署，无需重复操作）
+## 六、服务器配置详情（已部署，无需重复操作）
 
 以下记录初次部署时的配置，供参考或重建时使用。
 
-### 5.1 环境变量文件
+### 6.1 环境变量文件
 
 路径：`/opt/new-api/.env`
 
@@ -137,7 +176,7 @@ SQL_DSN=root:cs985211@tcp(localhost:3306)/newapi
 SESSION_SECRET=d97abb4e7f723a01ea0ecb6206488ca91dda87d542fc674c5c60fce48333b022
 ```
 
-### 5.2 systemd 服务
+### 6.2 systemd 服务
 
 路径：`/etc/systemd/system/new-api.service`
 
@@ -168,7 +207,7 @@ systemctl status new-api     # 查看状态
 journalctl -u new-api -f     # 实时查看日志
 ```
 
-### 5.3 Nginx 反向代理
+### 6.3 Nginx 反向代理
 
 通过宝塔面板管理，站点名 `pydaxing.com`。
 
@@ -191,7 +230,7 @@ location ^~ / {
 }
 ```
 
-### 5.4 SSL 证书
+### 6.4 SSL 证书
 
 通过宝塔面板管理（宝塔 → 网站 → pydaxing.com → SSL），支持自动续签。
 
@@ -201,7 +240,7 @@ location ^~ / {
 
 ---
 
-## 六、故障排查
+## 七、故障排查
 
 ### 服务启动失败
 
