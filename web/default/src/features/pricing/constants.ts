@@ -17,7 +17,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { type TFunction } from 'i18next'
-import { ENDPOINT_DISPLAY_NAMES } from '@/features/models/constants'
 import type { TokenUnit } from './types'
 
 // ----------------------------------------------------------------------------
@@ -64,43 +63,9 @@ export function getQuotaTypeLabels(
   }
 }
 
-/** Endpoint type options */
-export const ENDPOINT_TYPES = {
-  ALL: 'all',
-  OPENAI: 'openai',
-  OPENAI_RESPONSE: 'openai-response',
-  ANTHROPIC: 'anthropic',
-  GEMINI: 'gemini',
-  JINA_RERANK: 'jina-rerank',
-  IMAGE_GENERATION: 'image-generation',
-  EMBEDDINGS: 'embeddings',
-  OPENAI_VIDEO: 'openai-video',
-} as const
-
-export type EndpointTypeOption =
-  (typeof ENDPOINT_TYPES)[keyof typeof ENDPOINT_TYPES]
-
-/** Endpoint type labels */
-export function getEndpointTypeLabels(
-  t: TFunction
-): Record<EndpointTypeOption, string> {
-  return {
-    [ENDPOINT_TYPES.ALL]: t('All Types'),
-    [ENDPOINT_TYPES.OPENAI]: ENDPOINT_DISPLAY_NAMES['openai'] ?? 'Chat Completions',
-    [ENDPOINT_TYPES.OPENAI_RESPONSE]: ENDPOINT_DISPLAY_NAMES['openai-response'] ?? 'Responses',
-    [ENDPOINT_TYPES.ANTHROPIC]: ENDPOINT_DISPLAY_NAMES['anthropic'] ?? 'Messages (Anthropic)',
-    [ENDPOINT_TYPES.GEMINI]: ENDPOINT_DISPLAY_NAMES['gemini'] ?? 'Gemini Generate',
-    [ENDPOINT_TYPES.JINA_RERANK]: ENDPOINT_DISPLAY_NAMES['jina-rerank'] ?? 'Rerank',
-    [ENDPOINT_TYPES.IMAGE_GENERATION]: ENDPOINT_DISPLAY_NAMES['image-generation'] ?? t('Image Generation'),
-    [ENDPOINT_TYPES.EMBEDDINGS]: ENDPOINT_DISPLAY_NAMES['embeddings'] ?? t('Embeddings'),
-    [ENDPOINT_TYPES.OPENAI_VIDEO]: ENDPOINT_DISPLAY_NAMES['openai-video'] ?? t('Video Generation'),
-  }
-}
-
 /** Filter section keys */
 export const FILTER_SECTIONS = {
   PRICING_TYPE: 'pricingType',
-  ENDPOINT_TYPE: 'endpointType',
   VENDOR: 'vendor',
   GROUP: 'group',
   TAG: 'tag',

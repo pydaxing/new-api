@@ -22,10 +22,8 @@ import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import {
   ArrowLeft,
   CalendarClock,
-  Code2,
   FileText,
   HeartPulse,
-  Info,
   Layers,
   Maximize2,
   Sparkles,
@@ -43,7 +41,6 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CopyButton } from '@/components/copy-button'
 import { StaticDataTable } from '@/components/data-table'
 import { sideDrawerContentClassName } from '@/components/drawer-layout'
@@ -56,6 +53,7 @@ import {
   formatUptimePct,
   getSuccessRateTextClass,
 } from '@/features/performance-metrics/lib/format'
+import { ENDPOINT_DISPLAY_NAMES } from '@/features/models/constants'
 import { DEFAULT_TOKEN_UNIT, QUOTA_TYPE_VALUES } from '../constants'
 import { usePricingData } from '../hooks/use-pricing-data'
 import {
@@ -74,8 +72,6 @@ import type {
   TokenUnit,
 } from '../types'
 import { DynamicPricingBreakdown } from './dynamic-pricing-breakdown'
-import { ModelDetailsApi } from './model-details-api'
-import { ModelDetailsPerformance } from './model-details-performance'
 
 // ----------------------------------------------------------------------------
 // Local UI helpers
@@ -1126,16 +1122,61 @@ function GroupPricingSection(props: {
   )
 }
 
-const TAB_VALUES = ['overview', 'performance', 'api'] as const
-type TabValue = (typeof TAB_VALUES)[number]
+// ----------------------------------------------------------------------------
+// Endpoint list (simple list showing endpoint name + path + method)
+// ----------------------------------------------------------------------------
 
-const TAB_META: Record<
-  TabValue,
-  { icon: React.ComponentType<{ className?: string }>; labelKey: string }
-> = {
-  overview: { icon: Info, labelKey: 'Overview' },
-  performance: { icon: HeartPulse, labelKey: 'Performance' },
-  api: { icon: Code2, labelKey: 'API' },
+function EndpointListSection(props: {
+  endpointMap: Record<string, { path?: string; method?: string }>
+  model: PricingModel
+}) {
+  const { t } = useTranslation()
+  const endpoints = props.model.supported_endpoint_types || []
+
+  const items = endpoints
+    .map((type) => {
+      const info = props.endpointMap[type]
+      if (!info?.path) return null
+      return {
+        type,
+        label: ENDPOINT_DISPLAY_NAMES[type] ?? type,
+        path: info.path,
+        method: (info.method || 'POST').toUpperCase(),
+      }
+    })
+    .filter(Boolean) as {
+    type: string
+    label: string
+    path: string
+    method: string
+  }[]
+
+  if (items.length === 0) return null
+
+  return (
+    <section>
+      <SectionTitle>{t('Endpoints')}</SectionTitle>
+      <div className='divide-border/60 divide-y rounded-lg border'>
+        {items.map((item) => (
+          <div
+            key={item.type}
+            className='flex items-center gap-3 px-3 py-2.5'
+          >
+            <span className='bg-success/20 size-2 shrink-0 rounded-full' />
+            <span className='text-foreground min-w-0 shrink-0 text-sm font-medium'>
+              {item.label}
+            </span>
+            <span className='text-muted-foreground min-w-0 flex-1 truncate font-mono text-xs'>
+              {item.path}
+            </span>
+            <span className='bg-muted text-muted-foreground shrink-0 rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold'>
+              {item.method}
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
 }
 
 export interface ModelDetailsContentProps {
@@ -1162,64 +1203,40 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
     <div className='@container/details space-y-4'>
       <ModelHeader model={props.model} />
 
-      <Tabs defaultValue='overview' className='gap-4'>
-        <TabsList className='bg-muted/60 grid w-full grid-cols-3 gap-1 rounded-lg p-1 group-data-horizontal/tabs:h-auto'>
-          {TAB_VALUES.map((value) => {
-            const Icon = TAB_META[value].icon
-            return (
-              <TabsTrigger
-                key={value}
-                value={value}
-                className='h-8 min-w-0 gap-1.5 rounded-md px-3 text-xs sm:text-sm'
-              >
-                <Icon className='size-3.5' />
-                <span className='truncate'>{t(TAB_META[value].labelKey)}</span>
-              </TabsTrigger>
-            )
-          })}
-        </TabsList>
+      <div className='space-y-6'>
+        <OverviewSummaryGrid model={props.model} />
 
-        <TabsContent value='overview' className='space-y-6 outline-none'>
-          <OverviewSummaryGrid model={props.model} />
-
-          <section className='bg-card/60 space-y-5 rounded-xl border p-4 shadow-sm'>
-            <SectionTitle>{t('Pricing')}</SectionTitle>
-            <PriceSection
-              model={props.model}
-              priceRate={props.priceRate}
-              usdExchangeRate={props.usdExchangeRate}
-              tokenUnit={props.tokenUnit}
-              showRechargePrice={showRechargePrice}
-            />
-            {isDynamic && (
-              <DynamicPricingBreakdown billingExpr={props.model.billing_expr} />
-            )}
-            <GroupPricingSection
-              model={props.model}
-              groupRatio={props.groupRatio}
-              usableGroup={props.usableGroup}
-              autoGroups={props.autoGroups}
-              priceRate={props.priceRate}
-              usdExchangeRate={props.usdExchangeRate}
-              tokenUnit={props.tokenUnit}
-              showRechargePrice={showRechargePrice}
-            />
-          </section>
-
-          <ModelBackendDetailsSection model={props.model} />
-        </TabsContent>
-
-        <TabsContent value='performance' className='outline-none'>
-          <ModelDetailsPerformance model={props.model} />
-        </TabsContent>
-
-        <TabsContent value='api' className='outline-none'>
-          <ModelDetailsApi
+        <section className='bg-card/60 space-y-5 rounded-xl border p-4 shadow-sm'>
+          <SectionTitle>{t('Pricing')}</SectionTitle>
+          <PriceSection
             model={props.model}
-            endpointMap={props.endpointMap}
+            priceRate={props.priceRate}
+            usdExchangeRate={props.usdExchangeRate}
+            tokenUnit={props.tokenUnit}
+            showRechargePrice={showRechargePrice}
           />
-        </TabsContent>
-      </Tabs>
+          {isDynamic && (
+            <DynamicPricingBreakdown billingExpr={props.model.billing_expr} />
+          )}
+          <GroupPricingSection
+            model={props.model}
+            groupRatio={props.groupRatio}
+            usableGroup={props.usableGroup}
+            autoGroups={props.autoGroups}
+            priceRate={props.priceRate}
+            usdExchangeRate={props.usdExchangeRate}
+            tokenUnit={props.tokenUnit}
+            showRechargePrice={showRechargePrice}
+          />
+        </section>
+
+        <EndpointListSection
+          endpointMap={props.endpointMap}
+          model={props.model}
+        />
+
+        <ModelBackendDetailsSection model={props.model} />
+      </div>
     </div>
   )
 }
