@@ -35,9 +35,9 @@ import {
   previewUpstreamDiff,
   syncFromChannels,
 } from '../../api'
-import { getSyncLocaleOptions, getSyncSourceOptions } from '../../constants'
+import { getSyncSourceOptions } from '../../constants'
 import { modelsQueryKeys, vendorsQueryKeys } from '../../lib'
-import type { SyncLocale, SyncSource } from '../../types'
+import type { SyncSource } from '../../types'
 import { useModels } from '../models-provider'
 
 type SyncWizardDialogProps = {
@@ -58,14 +58,11 @@ export function SyncWizardDialog({
     syncWizardOptions,
   } = useModels()
   const isMobile = useIsMobile()
-  const [locale, setLocale] = useState<SyncLocale>('zh')
   const [source, setSource] = useState<SyncSource>('official')
   const [isSyncing, setIsSyncing] = useState(false)
   const [selectedChannelIds, setSelectedChannelIds] = useState<number[]>([])
 
-  // Get translated options
   const SYNC_SOURCE_OPTIONS = getSyncSourceOptions(t)
-  const SYNC_LOCALE_OPTIONS = getSyncLocaleOptions(t)
 
   // Fetch available channels when source is 'channels'
   const { data: channelsData } = useQuery({
@@ -77,7 +74,6 @@ export function SyncWizardDialog({
 
   useEffect(() => {
     if (open) {
-      setLocale(syncWizardOptions.locale || 'zh')
       const preferredSource = SYNC_SOURCE_OPTIONS.find(
         (option) => option.value === syncWizardOptions.source
       )
@@ -123,8 +119,8 @@ export function SyncWizardDialog({
 
     setIsSyncing(true)
     try {
-      setSyncWizardOptions({ locale, source })
-      const previewRes = await previewUpstreamDiff({ locale, source })
+      setSyncWizardOptions({ locale: 'zh', source })
+      const previewRes = await previewUpstreamDiff({ locale: 'zh', source })
 
       if (!previewRes.success) {
         throw new Error(previewRes.message || 'Failed to preview upstream diff')
@@ -142,7 +138,7 @@ export function SyncWizardDialog({
       }
 
       // No conflicts, proceed with sync
-      const response = await syncUpstream({ locale, source })
+      const response = await syncUpstream({ locale: 'zh', source })
 
       if (response.success) {
         const { created_models, created_vendors, updated_models } =
@@ -250,17 +246,17 @@ export function SyncWizardDialog({
         </RadioGroup>
       </div>
 
-      {source === 'channels' ? (
+      {source === 'channels' && (
         <div className='space-y-3'>
           <div>
-            <Label className='text-base'>{t('Select Channels')}</Label>
+            <Label className='text-base'>选择渠道</Label>
             <p className='text-muted-foreground text-sm'>
-              {t('Choose channels to import models from their /api/pricing endpoint.')}
+              选择要从哪些渠道导入模型信息
             </p>
           </div>
           <div className='max-h-48 space-y-2 overflow-y-auto rounded-lg border p-3'>
             {channels.length === 0 ? (
-              <p className='text-muted-foreground text-sm'>{t('Loading channels...')}</p>
+              <p className='text-muted-foreground text-sm'>加载渠道列表中...</p>
             ) : (
               channels.map((ch) => (
                 <label
@@ -284,40 +280,13 @@ export function SyncWizardDialog({
             )}
           </div>
         </div>
-      ) : (
-        <div className='space-y-2'>
-          <Label className='text-base'>{t('Select Language')}</Label>
-          <RadioGroup
-            value={locale}
-            onValueChange={(v) => setLocale(v as SyncLocale)}
-            className='grid gap-3 sm:grid-cols-3'
-          >
-            {SYNC_LOCALE_OPTIONS.map((option) => (
-              <div
-                key={option.value}
-                className='flex items-center space-x-2 rounded-lg border p-3'
-              >
-                <RadioGroupItem
-                  value={option.value}
-                  id={`locale-${option.value}`}
-                />
-                <Label
-                  htmlFor={`locale-${option.value}`}
-                  className='cursor-pointer font-normal'
-                >
-                  {option.label}
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
-        </div>
       )}
 
       <div className='bg-muted/50 rounded-lg border p-4'>
         <p className='text-muted-foreground text-sm'>
           {source === 'channels'
-            ? t('Models not yet in the metadata table will be created with description, vendor, and tags from the channel.')
-            : t('The sync will fetch missing models and vendors from the selected source. Existing records are updated only when you approve conflicts.')}
+            ? '将从渠道的定价接口获取模型信息，尚未录入的模型会自动创建（含描述、供应商、标签）。'
+            : '将从上游仓库同步缺失的模型和供应商信息，已有记录仅在你确认冲突时更新。'}
         </p>
       </div>
     </Dialog>

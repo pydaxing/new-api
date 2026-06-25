@@ -172,35 +172,19 @@ export const ENDPOINT_TEMPLATES: Record<
 // Sync Locale Options
 // ============================================================================
 
-export function getSyncLocaleOptions(t: TFunction) {
-  return [
-    { label: t('Chinese'), value: 'zh' },
-    { label: t('English'), value: 'en' },
-    { label: t('Japanese'), value: 'ja' },
-  ] as const
-}
-
-export function getSyncSourceOptions(t: TFunction) {
+export function getSyncSourceOptions(_t: TFunction) {
   return [
     {
-      label: t('Official Repository'),
+      label: '官方仓库',
       value: 'official' as SyncSource,
-      description: t('Sync from the public upstream metadata repository.'),
+      description: '从公共上游元数据仓库同步模型信息',
       disabled: false,
     },
     {
-      label: t('From Channels'),
+      label: '从渠道导入',
       value: 'channels' as SyncSource,
-      description: t(
-        'Import models from configured channel /api/pricing endpoints.'
-      ),
+      description: '通过已配置渠道的定价接口获取模型信息',
       disabled: false,
-    },
-    {
-      label: t('Configuration File'),
-      value: 'config' as SyncSource,
-      description: t('Upload or reference a local configuration file.'),
-      disabled: true,
     },
   ] as const
 }
