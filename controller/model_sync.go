@@ -544,7 +544,8 @@ func fetchChannelPricing(ctx context.Context, baseURL, key string) ([]channelPri
 	return result.Data, nil
 }
 
-// PreviewSyncFromChannels previews models that would be imported from channel /api/pricing endpoints
+// PreviewSyncFromChannels previews models that would be imported from channel /api/pricing endpoints.
+// Logic: local channel configured models → filter against model_meta → fetch metadata only for missing ones.
 func PreviewSyncFromChannels(c *gin.Context) {
 	var req syncFromChannelsRequest
 	if err := c.ShouldBindJSON(&req); err != nil || len(req.ChannelIDs) == 0 {
@@ -558,44 +559,85 @@ func PreviewSyncFromChannels(c *gin.Context) {
 		return
 	}
 
-	timeoutSec := common.GetEnvOrDefault("SYNC_HTTP_TIMEOUT_SECONDS", 15)
-	ctx, cancel := context.WithTimeout(c.Request.Context(), time.Duration(timeoutSec)*time.Second)
-	defer cancel()
-
-	// Fetch pricing from all selected channels
-	allModels := make(map[string]channelPricingModel)
+	// Step 1: Collect models configured in local channels
+	localModelSet := make(map[string]struct{})
 	for _, ch := range channels {
-		baseURL := ch.GetBaseURL()
-		if baseURL == "" {
-			continue
-		}
-		models, err := fetchChannelPricing(ctx, baseURL, ch.Key)
-		if err != nil {
-			continue
-		}
-		for _, m := range models {
-			if m.ModelName != "" {
-				if _, exists := allModels[m.ModelName]; !exists {
-					allModels[m.ModelName] = m
-				}
+		for _, m := range ch.GetModels() {
+			m = strings.TrimSpace(m)
+			if m != "" {
+				localModelSet[m] = struct{}{}
 			}
 		}
 	}
+	if len(localModelSet) == 0 {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "所选渠道未配置任何模型"})
+		return
+	}
 
-	// Find which ones are missing from model_meta
+	// Step 2: Find which are missing from model_meta
+	localModels := make([]string, 0, len(localModelSet))
+	for name := range localModelSet {
+		localModels = append(localModels, name)
+	}
 	var existingNames []string
-	modelNames := make([]string, 0, len(allModels))
-	for name := range allModels {
-		modelNames = append(modelNames, name)
-	}
-	if len(modelNames) > 0 {
-		_ = model.DB.Model(&model.Model{}).Where("model_name IN ?", modelNames).Pluck("model_name", &existingNames).Error
-	}
+	_ = model.DB.Model(&model.Model{}).Where("model_name IN ?", localModels).Pluck("model_name", &existingNames).Error
 	existingSet := make(map[string]struct{}, len(existingNames))
 	for _, name := range existingNames {
 		existingSet[name] = struct{}{}
 	}
 
+	missingModels := make([]string, 0)
+	for name := range localModelSet {
+		if _, exists := existingSet[name]; !exists {
+			missingModels = append(missingModels, name)
+		}
+	}
+
+	if len(missingModels) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"data": gin.H{
+				"missing":       []interface{}{},
+				"missing_count": 0,
+				"total_local":   len(localModelSet),
+			},
+		})
+		return
+	}
+
+	// Step 3: Fetch pricing from channels to get metadata for missing models
+	timeoutSec := common.GetEnvOrDefault("SYNC_HTTP_TIMEOUT_SECONDS", 15)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), time.Duration(timeoutSec)*time.Second)
+	defer cancel()
+
+	missingSet := make(map[string]struct{}, len(missingModels))
+	for _, name := range missingModels {
+		missingSet[name] = struct{}{}
+	}
+
+	pricingMeta := make(map[string]channelPricingModel)
+	for _, ch := range channels {
+		baseURL := ch.GetBaseURL()
+		if baseURL == "" {
+			continue
+		}
+		models, fetchErr := fetchChannelPricing(ctx, baseURL, ch.Key)
+		if fetchErr != nil {
+			continue
+		}
+		for _, m := range models {
+			if m.ModelName == "" {
+				continue
+			}
+			if _, needed := missingSet[m.ModelName]; needed {
+				if _, exists := pricingMeta[m.ModelName]; !exists {
+					pricingMeta[m.ModelName] = m
+				}
+			}
+		}
+	}
+
+	// Step 4: Build preview list
 	type previewItem struct {
 		ModelName   string `json:"model_name"`
 		Description string `json:"description,omitempty"`
@@ -603,21 +645,20 @@ func PreviewSyncFromChannels(c *gin.Context) {
 		Tags        string `json:"tags,omitempty"`
 	}
 	var missing []previewItem
-	for name, m := range allModels {
-		if _, exists := existingSet[name]; !exists {
+	for _, name := range missingModels {
+		item := previewItem{ModelName: name}
+		if m, ok := pricingMeta[name]; ok {
+			item.Description = m.Description
+			item.Supplier = m.Supplier
 			tags := make([]string, 0, len(m.Tags))
 			for _, t := range m.Tags {
 				if t.Name != "" {
 					tags = append(tags, t.Name)
 				}
 			}
-			missing = append(missing, previewItem{
-				ModelName:   name,
-				Description: m.Description,
-				Supplier:    m.Supplier,
-				Tags:        strings.Join(tags, ","),
-			})
+			item.Tags = strings.Join(tags, ",")
 		}
+		missing = append(missing, item)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -625,12 +666,13 @@ func PreviewSyncFromChannels(c *gin.Context) {
 		"data": gin.H{
 			"missing":       missing,
 			"missing_count": len(missing),
-			"total_fetched": len(allModels),
+			"total_local":   len(localModelSet),
 		},
 	})
 }
 
-// SyncFromChannels imports models from channel /api/pricing endpoints into model_meta
+// SyncFromChannels imports models from channel /api/pricing endpoints into model_meta.
+// Only imports models that are configured in local channels but missing from model_meta.
 func SyncFromChannels(c *gin.Context) {
 	var req syncFromChannelsRequest
 	if err := c.ShouldBindJSON(&req); err != nil || len(req.ChannelIDs) == 0 {
@@ -644,12 +686,64 @@ func SyncFromChannels(c *gin.Context) {
 		return
 	}
 
+	// Step 1: Collect models configured in local channels
+	localModelSet := make(map[string]struct{})
+	for _, ch := range channels {
+		for _, m := range ch.GetModels() {
+			m = strings.TrimSpace(m)
+			if m != "" {
+				localModelSet[m] = struct{}{}
+			}
+		}
+	}
+	if len(localModelSet) == 0 {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "所选渠道未配置任何模型"})
+		return
+	}
+
+	// Step 2: Find which are missing from model_meta
+	localModels := make([]string, 0, len(localModelSet))
+	for name := range localModelSet {
+		localModels = append(localModels, name)
+	}
+	var existingNames []string
+	_ = model.DB.Model(&model.Model{}).Where("model_name IN ?", localModels).Pluck("model_name", &existingNames).Error
+	existingSet := make(map[string]struct{}, len(existingNames))
+	for _, name := range existingNames {
+		existingSet[name] = struct{}{}
+	}
+
+	missingModels := make([]string, 0)
+	for name := range localModelSet {
+		if _, exists := existingSet[name]; !exists {
+			missingModels = append(missingModels, name)
+		}
+	}
+
+	if len(missingModels) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"data": gin.H{
+				"created_models": 0,
+				"total_fetched":  0,
+				"total_local":    len(localModelSet),
+				"message":        "所有模型已存在，无需导入",
+			},
+		})
+		return
+	}
+
+	// Step 3: Fetch pricing from channels to get metadata for missing models
 	timeoutSec := common.GetEnvOrDefault("SYNC_HTTP_TIMEOUT_SECONDS", 15)
 	ctx, cancel := context.WithTimeout(c.Request.Context(), time.Duration(timeoutSec)*time.Second)
 	defer cancel()
 
-	// Fetch pricing from all selected channels
-	allModels := make(map[string]channelPricingModel)
+	missingSet := make(map[string]struct{}, len(missingModels))
+	for _, name := range missingModels {
+		missingSet[name] = struct{}{}
+	}
+
+	pricingMeta := make(map[string]channelPricingModel)
 	for _, ch := range channels {
 		baseURL := ch.GetBaseURL()
 		if baseURL == "" {
@@ -660,81 +754,65 @@ func SyncFromChannels(c *gin.Context) {
 			continue
 		}
 		for _, m := range models {
-			if m.ModelName != "" {
-				if _, exists := allModels[m.ModelName]; !exists {
-					allModels[m.ModelName] = m
+			if m.ModelName == "" {
+				continue
+			}
+			if _, needed := missingSet[m.ModelName]; needed {
+				if _, exists := pricingMeta[m.ModelName]; !exists {
+					pricingMeta[m.ModelName] = m
 				}
 			}
 		}
 	}
 
-	if len(allModels) == 0 {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "未从渠道获取到任何模型"})
-		return
-	}
-
-	// Find which ones are missing from model_meta
-	var existingNames []string
-	modelNames := make([]string, 0, len(allModels))
-	for name := range allModels {
-		modelNames = append(modelNames, name)
-	}
-	if len(modelNames) > 0 {
-		_ = model.DB.Model(&model.Model{}).Where("model_name IN ?", modelNames).Pluck("model_name", &existingNames).Error
-	}
-	existingSet := make(map[string]struct{}, len(existingNames))
-	for _, name := range existingNames {
-		existingSet[name] = struct{}{}
-	}
-
-	// Create missing models
+	// Step 4: Create missing models, using pricing metadata when available
 	createdCount := 0
 	skippedCount := 0
 	createdList := make([]string, 0)
 	vendorIDCache := make(map[string]int)
 
-	for name, m := range allModels {
-		if _, exists := existingSet[name]; exists {
-			continue
-		}
-
-		// Resolve vendor
-		vendorID := 0
-		if m.Supplier != "" {
-			if id, ok := vendorIDCache[m.Supplier]; ok {
-				vendorID = id
-			} else {
-				var existing model.Vendor
-				if err := model.DB.Where("name = ?", m.Supplier).First(&existing).Error; err == nil {
-					vendorID = existing.Id
-				} else {
-					v := &model.Vendor{
-						Name:   m.Supplier,
-						Status: 1,
-					}
-					if err := v.Insert(); err == nil {
-						vendorID = v.Id
-					}
-				}
-				vendorIDCache[m.Supplier] = vendorID
-			}
-		}
-
-		// Build tags string
-		tags := make([]string, 0, len(m.Tags))
-		for _, t := range m.Tags {
-			if t.Name != "" {
-				tags = append(tags, t.Name)
-			}
-		}
-
+	for _, name := range missingModels {
 		mi := &model.Model{
-			ModelName:   name,
-			Description: m.Description,
-			Tags:        strings.Join(tags, ","),
-			VendorID:    vendorID,
-			Status:      1,
+			ModelName: name,
+			Status:    1,
 		}
+
+		if m, hasMeta := pricingMeta[name]; hasMeta {
+			mi.Description = m.Description
+
+			// Build tags string
+			tags := make([]string, 0, len(m.Tags))
+			for _, t := range m.Tags {
+				if t.Name != "" {
+					tags = append(tags, t.Name)
+				}
+			}
+			mi.Tags = strings.Join(tags, ",")
+
+			// Resolve vendor
+			if m.Supplier != "" {
+				if id, ok := vendorIDCache[m.Supplier]; ok {
+					mi.VendorID = id
+				} else {
+					vendorID := 0
+					var existing model.Vendor
+					if err := model.DB.Where("name = ?", m.Supplier).First(&existing).Error; err == nil {
+						vendorID = existing.Id
+					} else {
+						v := &model.Vendor{
+							Name:   m.Supplier,
+							Status: 1,
+						}
+						if err := v.Insert(); err == nil {
+							vendorID = v.Id
+						}
+					}
+					vendorIDCache[m.Supplier] = vendorID
+					mi.VendorID = vendorID
+				}
+			}
+		}
+
 		if err := mi.Insert(); err == nil {
 			createdCount++
 			createdList = append(createdList, name)
@@ -749,7 +827,8 @@ func SyncFromChannels(c *gin.Context) {
 			"created_models": createdCount,
 			"skipped_models": skippedCount,
 			"created_list":   createdList,
-			"total_fetched":  len(allModels),
+			"total_fetched":  len(pricingMeta),
+			"total_local":    len(localModelSet),
 		},
 	})
 }

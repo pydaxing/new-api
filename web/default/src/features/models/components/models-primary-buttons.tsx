@@ -63,7 +63,7 @@ export function ModelsPrimaryButtons() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={<Button size='sm' className='bg-black text-white hover:bg-black/80' />}
+        render={<Button size='icon' className='h-8 w-8 rounded-full' />}
       >
         <Plus className='h-4 w-4' />
       </DropdownMenuTrigger>

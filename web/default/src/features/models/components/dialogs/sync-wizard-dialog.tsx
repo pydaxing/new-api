@@ -170,8 +170,11 @@ export function SyncWizardDialog({
             {t('Cancel')}
           </Button>
           <Button onClick={handleSync} disabled={isSyncing}>
-            {isSyncing && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-            <RefreshCw className='mr-2 h-4 w-4' />
+            {isSyncing ? (
+              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+            ) : (
+              <RefreshCw className='mr-2 h-4 w-4' />
+            )}
             {isSyncing ? t('Syncing...') : t('Sync Now')}
           </Button>
         </>
