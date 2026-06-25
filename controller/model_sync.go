@@ -496,6 +496,264 @@ func chooseStatus(primary, fallback int) int {
 }
 
 // SyncUpstreamPreview 预览上游与本地的差异（仅用于弹窗选择）
+// channelPricingModel represents a single model entry from /api/pricing response
+type channelPricingModel struct {
+	ModelName   string `json:"model_name"`
+	Description string `json:"description"`
+	Supplier    string `json:"supplier"`
+	Tags        []struct {
+		Name string `json:"name"`
+	} `json:"tags"`
+}
+
+type channelPricingResponse struct {
+	Success bool                  `json:"success"`
+	Data    []channelPricingModel `json:"data"`
+}
+
+type syncFromChannelsRequest struct {
+	ChannelIDs []int `json:"channel_ids"`
+}
+
+func fetchChannelPricing(ctx context.Context, baseURL, key string) ([]channelPricingModel, error) {
+	url := strings.TrimRight(baseURL, "/") + "/api/pricing"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	if key != "" {
+		req.Header.Set("Authorization", "Bearer "+key)
+	}
+	resp, err := getHTTPClient().Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("upstream returned %d", resp.StatusCode)
+	}
+	maxBytes := int64(10) << 20
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxBytes))
+	if err != nil {
+		return nil, err
+	}
+	var result channelPricingResponse
+	if err := common.Unmarshal(body, &result); err != nil {
+		return nil, err
+	}
+	return result.Data, nil
+}
+
+// PreviewSyncFromChannels previews models that would be imported from channel /api/pricing endpoints
+func PreviewSyncFromChannels(c *gin.Context) {
+	var req syncFromChannelsRequest
+	if err := c.ShouldBindJSON(&req); err != nil || len(req.ChannelIDs) == 0 {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "请提供 channel_ids"})
+		return
+	}
+
+	channels, err := model.GetChannelsByIds(req.ChannelIDs)
+	if err != nil || len(channels) == 0 {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "未找到有效渠道"})
+		return
+	}
+
+	timeoutSec := common.GetEnvOrDefault("SYNC_HTTP_TIMEOUT_SECONDS", 15)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), time.Duration(timeoutSec)*time.Second)
+	defer cancel()
+
+	// Fetch pricing from all selected channels
+	allModels := make(map[string]channelPricingModel)
+	for _, ch := range channels {
+		baseURL := ch.GetBaseURL()
+		if baseURL == "" {
+			continue
+		}
+		models, err := fetchChannelPricing(ctx, baseURL, ch.Key)
+		if err != nil {
+			continue
+		}
+		for _, m := range models {
+			if m.ModelName != "" {
+				if _, exists := allModels[m.ModelName]; !exists {
+					allModels[m.ModelName] = m
+				}
+			}
+		}
+	}
+
+	// Find which ones are missing from model_meta
+	var existingNames []string
+	modelNames := make([]string, 0, len(allModels))
+	for name := range allModels {
+		modelNames = append(modelNames, name)
+	}
+	if len(modelNames) > 0 {
+		_ = model.DB.Model(&model.Model{}).Where("model_name IN ?", modelNames).Pluck("model_name", &existingNames).Error
+	}
+	existingSet := make(map[string]struct{}, len(existingNames))
+	for _, name := range existingNames {
+		existingSet[name] = struct{}{}
+	}
+
+	type previewItem struct {
+		ModelName   string `json:"model_name"`
+		Description string `json:"description,omitempty"`
+		Supplier    string `json:"supplier,omitempty"`
+		Tags        string `json:"tags,omitempty"`
+	}
+	var missing []previewItem
+	for name, m := range allModels {
+		if _, exists := existingSet[name]; !exists {
+			tags := make([]string, 0, len(m.Tags))
+			for _, t := range m.Tags {
+				if t.Name != "" {
+					tags = append(tags, t.Name)
+				}
+			}
+			missing = append(missing, previewItem{
+				ModelName:   name,
+				Description: m.Description,
+				Supplier:    m.Supplier,
+				Tags:        strings.Join(tags, ","),
+			})
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"missing":       missing,
+			"missing_count": len(missing),
+			"total_fetched": len(allModels),
+		},
+	})
+}
+
+// SyncFromChannels imports models from channel /api/pricing endpoints into model_meta
+func SyncFromChannels(c *gin.Context) {
+	var req syncFromChannelsRequest
+	if err := c.ShouldBindJSON(&req); err != nil || len(req.ChannelIDs) == 0 {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "请提供 channel_ids"})
+		return
+	}
+
+	channels, err := model.GetChannelsByIds(req.ChannelIDs)
+	if err != nil || len(channels) == 0 {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "未找到有效渠道"})
+		return
+	}
+
+	timeoutSec := common.GetEnvOrDefault("SYNC_HTTP_TIMEOUT_SECONDS", 15)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), time.Duration(timeoutSec)*time.Second)
+	defer cancel()
+
+	// Fetch pricing from all selected channels
+	allModels := make(map[string]channelPricingModel)
+	for _, ch := range channels {
+		baseURL := ch.GetBaseURL()
+		if baseURL == "" {
+			continue
+		}
+		models, fetchErr := fetchChannelPricing(ctx, baseURL, ch.Key)
+		if fetchErr != nil {
+			continue
+		}
+		for _, m := range models {
+			if m.ModelName != "" {
+				if _, exists := allModels[m.ModelName]; !exists {
+					allModels[m.ModelName] = m
+				}
+			}
+		}
+	}
+
+	if len(allModels) == 0 {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "未从渠道获取到任何模型"})
+		return
+	}
+
+	// Find which ones are missing from model_meta
+	var existingNames []string
+	modelNames := make([]string, 0, len(allModels))
+	for name := range allModels {
+		modelNames = append(modelNames, name)
+	}
+	if len(modelNames) > 0 {
+		_ = model.DB.Model(&model.Model{}).Where("model_name IN ?", modelNames).Pluck("model_name", &existingNames).Error
+	}
+	existingSet := make(map[string]struct{}, len(existingNames))
+	for _, name := range existingNames {
+		existingSet[name] = struct{}{}
+	}
+
+	// Create missing models
+	createdCount := 0
+	skippedCount := 0
+	createdList := make([]string, 0)
+	vendorIDCache := make(map[string]int)
+
+	for name, m := range allModels {
+		if _, exists := existingSet[name]; exists {
+			continue
+		}
+
+		// Resolve vendor
+		vendorID := 0
+		if m.Supplier != "" {
+			if id, ok := vendorIDCache[m.Supplier]; ok {
+				vendorID = id
+			} else {
+				var existing model.Vendor
+				if err := model.DB.Where("name = ?", m.Supplier).First(&existing).Error; err == nil {
+					vendorID = existing.Id
+				} else {
+					v := &model.Vendor{
+						Name:   m.Supplier,
+						Status: 1,
+					}
+					if err := v.Insert(); err == nil {
+						vendorID = v.Id
+					}
+				}
+				vendorIDCache[m.Supplier] = vendorID
+			}
+		}
+
+		// Build tags string
+		tags := make([]string, 0, len(m.Tags))
+		for _, t := range m.Tags {
+			if t.Name != "" {
+				tags = append(tags, t.Name)
+			}
+		}
+
+		mi := &model.Model{
+			ModelName:   name,
+			Description: m.Description,
+			Tags:        strings.Join(tags, ","),
+			VendorID:    vendorID,
+			Status:      1,
+		}
+		if err := mi.Insert(); err == nil {
+			createdCount++
+			createdList = append(createdList, name)
+		} else {
+			skippedCount++
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"created_models": createdCount,
+			"skipped_models": skippedCount,
+			"created_list":   createdList,
+			"total_fetched":  len(allModels),
+		},
+	})
+}
+
 func SyncUpstreamPreview(c *gin.Context) {
 	// 1) 拉取上游数据
 	timeoutSec := common.GetEnvOrDefault("SYNC_HTTP_TIMEOUT_SECONDS", 15)

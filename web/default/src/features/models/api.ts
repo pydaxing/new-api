@@ -227,6 +227,52 @@ export async function applyUpstreamOverwrite(params: {
 }
 
 // ============================================================================
+// Sync from Channels
+// ============================================================================
+
+/**
+ * Preview models that would be imported from channel /api/pricing endpoints
+ */
+export async function previewSyncFromChannels(channelIds: number[]): Promise<{
+  success: boolean
+  message?: string
+  data?: {
+    missing: Array<{
+      model_name: string
+      description?: string
+      supplier?: string
+      tags?: string
+    }>
+    missing_count: number
+    total_fetched: number
+  }
+}> {
+  const res = await api.post('/api/models/sync_from_channels/preview', {
+    channel_ids: channelIds,
+  })
+  return res.data
+}
+
+/**
+ * Import models from channel /api/pricing endpoints into model_meta
+ */
+export async function syncFromChannels(channelIds: number[]): Promise<{
+  success: boolean
+  message?: string
+  data?: {
+    created_models: number
+    skipped_models: number
+    created_list: string[]
+    total_fetched: number
+  }
+}> {
+  const res = await api.post('/api/models/sync_from_channels', {
+    channel_ids: channelIds,
+  })
+  return res.data
+}
+
+// ============================================================================
 // Utility Operations
 // ============================================================================
 

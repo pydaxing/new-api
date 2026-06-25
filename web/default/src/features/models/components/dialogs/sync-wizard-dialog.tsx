@@ -17,18 +17,24 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useEffect, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2, RefreshCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Dialog } from '@/components/dialog'
 import { StatusBadge } from '@/components/status-badge'
-import { syncUpstream, previewUpstreamDiff } from '../../api'
+import { getUpstreamChannels } from '@/features/system-settings/api'
+import {
+  syncUpstream,
+  previewUpstreamDiff,
+  syncFromChannels,
+} from '../../api'
 import { getSyncLocaleOptions, getSyncSourceOptions } from '../../constants'
 import { modelsQueryKeys, vendorsQueryKeys } from '../../lib'
 import type { SyncLocale, SyncSource } from '../../types'
@@ -55,10 +61,19 @@ export function SyncWizardDialog({
   const [locale, setLocale] = useState<SyncLocale>('zh')
   const [source, setSource] = useState<SyncSource>('official')
   const [isSyncing, setIsSyncing] = useState(false)
+  const [selectedChannelIds, setSelectedChannelIds] = useState<number[]>([])
 
   // Get translated options
   const SYNC_SOURCE_OPTIONS = getSyncSourceOptions(t)
   const SYNC_LOCALE_OPTIONS = getSyncLocaleOptions(t)
+
+  // Fetch available channels when source is 'channels'
+  const { data: channelsData } = useQuery({
+    queryKey: ['upstream-channels'],
+    queryFn: getUpstreamChannels,
+    enabled: open && source === 'channels',
+  })
+  const channels = (channelsData?.data ?? []).filter((ch) => ch.id > 0)
 
   useEffect(() => {
     if (open) {
@@ -71,10 +86,41 @@ export function SyncWizardDialog({
           ? (preferredSource.value as SyncSource)
           : 'official'
       )
+      setSelectedChannelIds([])
     }
   }, [open, syncWizardOptions, SYNC_SOURCE_OPTIONS])
 
   const handleSync = async () => {
+    if (source === 'channels') {
+      if (selectedChannelIds.length === 0) {
+        toast.warning(t('Please select at least one channel'))
+        return
+      }
+      setIsSyncing(true)
+      try {
+        const response = await syncFromChannels(selectedChannelIds)
+        if (response.success) {
+          const { created_models, total_fetched } = response.data || {}
+          toast.success(
+            t('Import completed! Created {{created}} models from {{total}} fetched.', {
+              created: created_models || 0,
+              total: total_fetched || 0,
+            })
+          )
+          queryClient.invalidateQueries({ queryKey: modelsQueryKeys.lists() })
+          queryClient.invalidateQueries({ queryKey: vendorsQueryKeys.lists() })
+          onOpenChange(false)
+        } else {
+          toast.error(response.message || t('Import failed'))
+        }
+      } catch (error: unknown) {
+        toast.error((error as Error)?.message || t('Import failed'))
+      } finally {
+        setIsSyncing(false)
+      }
+      return
+    }
+
     setIsSyncing(true)
     try {
       setSyncWizardOptions({ locale, source })
@@ -204,38 +250,74 @@ export function SyncWizardDialog({
         </RadioGroup>
       </div>
 
-      <div className='space-y-2'>
-        <Label className='text-base'>{t('Select Language')}</Label>
-        <RadioGroup
-          value={locale}
-          onValueChange={(v) => setLocale(v as SyncLocale)}
-          className='grid gap-3 sm:grid-cols-3'
-        >
-          {SYNC_LOCALE_OPTIONS.map((option) => (
-            <div
-              key={option.value}
-              className='flex items-center space-x-2 rounded-lg border p-3'
-            >
-              <RadioGroupItem
-                value={option.value}
-                id={`locale-${option.value}`}
-              />
-              <Label
-                htmlFor={`locale-${option.value}`}
-                className='cursor-pointer font-normal'
+      {source === 'channels' ? (
+        <div className='space-y-3'>
+          <div>
+            <Label className='text-base'>{t('Select Channels')}</Label>
+            <p className='text-muted-foreground text-sm'>
+              {t('Choose channels to import models from their /api/pricing endpoint.')}
+            </p>
+          </div>
+          <div className='max-h-48 space-y-2 overflow-y-auto rounded-lg border p-3'>
+            {channels.length === 0 ? (
+              <p className='text-muted-foreground text-sm'>{t('Loading channels...')}</p>
+            ) : (
+              channels.map((ch) => (
+                <label
+                  key={ch.id}
+                  className='flex cursor-pointer items-center gap-2 rounded p-1.5 hover:bg-muted/50'
+                >
+                  <Checkbox
+                    checked={selectedChannelIds.includes(ch.id)}
+                    onCheckedChange={(checked) => {
+                      setSelectedChannelIds((prev) =>
+                        checked
+                          ? [...prev, ch.id]
+                          : prev.filter((id) => id !== ch.id)
+                      )
+                    }}
+                  />
+                  <span className='text-sm'>{ch.name}</span>
+                  <span className='text-muted-foreground text-xs'>({ch.base_url})</span>
+                </label>
+              ))
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className='space-y-2'>
+          <Label className='text-base'>{t('Select Language')}</Label>
+          <RadioGroup
+            value={locale}
+            onValueChange={(v) => setLocale(v as SyncLocale)}
+            className='grid gap-3 sm:grid-cols-3'
+          >
+            {SYNC_LOCALE_OPTIONS.map((option) => (
+              <div
+                key={option.value}
+                className='flex items-center space-x-2 rounded-lg border p-3'
               >
-                {option.label}
-              </Label>
-            </div>
-          ))}
-        </RadioGroup>
-      </div>
+                <RadioGroupItem
+                  value={option.value}
+                  id={`locale-${option.value}`}
+                />
+                <Label
+                  htmlFor={`locale-${option.value}`}
+                  className='cursor-pointer font-normal'
+                >
+                  {option.label}
+                </Label>
+              </div>
+            ))}
+          </RadioGroup>
+        </div>
+      )}
 
       <div className='bg-muted/50 rounded-lg border p-4'>
         <p className='text-muted-foreground text-sm'>
-          {t(
-            'The sync will fetch missing models and vendors from the selected source. Existing records are updated only when you approve conflicts.'
-          )}
+          {source === 'channels'
+            ? t('Models not yet in the metadata table will be created with description, vendor, and tags from the channel.')
+            : t('The sync will fetch missing models and vendors from the selected source. Existing records are updated only when you approve conflicts.')}
         </p>
       </div>
     </Dialog>

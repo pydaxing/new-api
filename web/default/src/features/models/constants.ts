@@ -189,6 +189,14 @@ export function getSyncSourceOptions(t: TFunction) {
       disabled: false,
     },
     {
+      label: t('From Channels'),
+      value: 'channels' as SyncSource,
+      description: t(
+        'Import models from configured channel /api/pricing endpoints.'
+      ),
+      disabled: false,
+    },
+    {
       label: t('Configuration File'),
       value: 'config' as SyncSource,
       description: t('Upload or reference a local configuration file.'),
