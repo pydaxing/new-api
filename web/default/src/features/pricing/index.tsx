@@ -30,7 +30,7 @@ import {
   ModelCardGrid,
   ModelDetailsDrawer,
 } from './components'
-import { EXCLUDED_GROUPS, VIEW_MODES } from './constants'
+import { VIEW_MODES } from './constants'
 import { useFilters } from './hooks/use-filters'
 import { usePricingData } from './hooks/use-pricing-data'
 
@@ -56,7 +56,6 @@ export function Pricing() {
     searchInput,
     sortBy,
     vendorFilter,
-    groupFilter,
     quotaTypeFilter,
     tagFilter,
     tokenUnit,
@@ -65,7 +64,6 @@ export function Pricing() {
     setSearchInput,
     setSortBy,
     setVendorFilter,
-    setGroupFilter,
     setQuotaTypeFilter,
     setTagFilter,
     setTokenUnit,
@@ -91,14 +89,6 @@ export function Pricing() {
           ) || null
         : null,
     [models, selectedModelName]
-  )
-
-  const availableGroups = useMemo(
-    () =>
-      Object.keys(usableGroup || {}).filter(
-        (g) => !EXCLUDED_GROUPS.includes(g)
-      ),
-    [usableGroup]
   )
 
   const handleClearAll = useCallback(() => {
@@ -196,19 +186,15 @@ export function Pricing() {
             />
           </header>
 
-          <div className='grid gap-4 xl:grid-cols-[330px_minmax(0,1fr)]'>
+          <div className='grid gap-4 xl:grid-cols-[231px_minmax(0,1fr)]'>
             <PricingSidebar
               quotaTypeFilter={quotaTypeFilter}
               vendorFilter={vendorFilter}
-              groupFilter={groupFilter}
               tagFilter={tagFilter}
               onQuotaTypeChange={setQuotaTypeFilter}
               onVendorChange={setVendorFilter}
-              onGroupChange={setGroupFilter}
               onTagChange={setTagFilter}
               vendors={vendors || []}
-              groups={availableGroups}
-              groupRatios={groupRatio}
               tags={availableTags}
               models={models || []}
               hasActiveFilters={hasActiveFilters}
@@ -230,15 +216,11 @@ export function Pricing() {
                 onViewModeChange={setViewMode}
                 quotaTypeFilter={quotaTypeFilter}
                 vendorFilter={vendorFilter}
-                groupFilter={groupFilter}
                 tagFilter={tagFilter}
                 onQuotaTypeChange={setQuotaTypeFilter}
                 onVendorChange={setVendorFilter}
-                onGroupChange={setGroupFilter}
                 onTagChange={setTagFilter}
                 vendors={vendors || []}
-                groups={availableGroups}
-                groupRatios={groupRatio}
                 tags={availableTags}
                 models={models || []}
                 hasActiveFilters={hasActiveFilters}

@@ -441,65 +441,61 @@ function ModelBackendProviderSection(props: { model: PricingModel }) {
   const groups = normalizeCatalogItems(model.enable_groups)
   const endpoints = normalizeCatalogItems(model.supported_endpoint_types)
   const tags = parseTags(model.tags)
-  const cells: React.ReactNode[] = []
+
+  const items: { label: string; values: string[] }[] = []
 
   if (model.vendor_name) {
-    cells.push(
-      <CatalogInfoCell key='provider' label={t('Provider')}>
-        <CatalogTextValue>{model.vendor_name}</CatalogTextValue>
-      </CatalogInfoCell>
-    )
+    items.push({ label: t('Provider'), values: [model.vendor_name] })
   }
 
-  cells.push(
-    <CatalogInfoCell key='type' label={t('Type')}>
-      <CatalogTextValue>
-        {model.quota_type === QUOTA_TYPE_VALUES.TOKEN
-          ? t('Token-based')
-          : t('Per Request')}
-      </CatalogTextValue>
-    </CatalogInfoCell>
-  )
+  items.push({
+    label: t('Type'),
+    values: [
+      model.quota_type === QUOTA_TYPE_VALUES.TOKEN
+        ? t('Token-based')
+        : t('Per Request'),
+    ],
+  })
 
   if (groups.length > 0) {
-    cells.push(
-      <CatalogInfoCell key='groups' label={t('Groups')}>
-        <CatalogPillList items={groups} />
-      </CatalogInfoCell>
-    )
+    items.push({ label: t('Groups'), values: groups })
   }
 
   if (endpoints.length > 0) {
-    cells.push(
-      <CatalogInfoCell key='endpoints' label={t('Endpoints')}>
-        <CatalogPillList items={endpoints} />
-      </CatalogInfoCell>
-    )
+    items.push({ label: t('Endpoints'), values: endpoints })
   }
 
   if (tags.length > 0) {
-    cells.push(
-      <CatalogInfoCell key='tags' label={t('Tags')}>
-        <CatalogPillList items={tags} />
-      </CatalogInfoCell>
-    )
+    items.push({ label: t('Tags'), values: tags })
   }
 
   if (model.parameter_count) {
-    cells.push(
-      <CatalogInfoCell key='parameters' label={t('Parameters')}>
-        <CatalogTextValue>{model.parameter_count}</CatalogTextValue>
-      </CatalogInfoCell>
-    )
+    items.push({ label: t('Parameters'), values: [model.parameter_count] })
   }
 
-  if (cells.length === 0) return null
+  if (items.length === 0) return null
 
   return (
     <section>
       <SectionTitle>{t('Model')}</SectionTitle>
-      <div className='border-border/60 bg-border/60 grid grid-cols-1 gap-px overflow-hidden rounded-lg border sm:grid-cols-2'>
-        {cells}
+      <div className='flex flex-wrap gap-x-4 gap-y-3'>
+        {items.map((item) => (
+          <div key={item.label} className='flex items-center gap-1.5'>
+            <span className='text-muted-foreground text-xs font-medium'>
+              {item.label}:
+            </span>
+            <div className='flex flex-wrap gap-1'>
+              {item.values.map((v) => (
+                <span
+                  key={v}
+                  className='bg-muted text-foreground rounded-full px-2.5 py-0.5 text-xs font-medium'
+                >
+                  {v}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   )
@@ -524,7 +520,6 @@ function ModelHeader(props: { model: PricingModel }) {
   const model = props.model
   const modelIconKey = model.icon || model.vendor_icon
   const modelIcon = modelIconKey ? getLobeIcon(modelIconKey, 20) : null
-  const description = model.description || model.vendor_description || null
   const isSpecialExpression =
     model.billing_mode === 'tiered_expr' &&
     Boolean(model.billing_expr) &&
@@ -567,11 +562,6 @@ function ModelHeader(props: { model: PricingModel }) {
           </>
         )}
       </div>
-      {description && (
-        <p className='text-muted-foreground mt-2 text-sm leading-relaxed'>
-          {description}
-        </p>
-      )}
     </header>
   )
 }
@@ -1204,8 +1194,6 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
       <ModelHeader model={props.model} />
 
       <div className='space-y-6'>
-        <OverviewSummaryGrid model={props.model} />
-
         <section className='bg-card/60 space-y-5 rounded-xl border p-4 shadow-sm'>
           <SectionTitle>{t('Pricing')}</SectionTitle>
           <PriceSection
@@ -1234,6 +1222,8 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
           endpointMap={props.endpointMap}
           model={props.model}
         />
+
+        <OverviewSummaryGrid model={props.model} />
 
         <ModelBackendDetailsSection model={props.model} />
       </div>

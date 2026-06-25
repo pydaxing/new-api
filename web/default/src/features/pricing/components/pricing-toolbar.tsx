@@ -74,15 +74,11 @@ export interface PricingToolbarProps {
   onViewModeChange: (value: ViewMode) => void
   quotaTypeFilter: string
   vendorFilter: string
-  groupFilter: string
   tagFilter: string
   onQuotaTypeChange: (value: string) => void
   onVendorChange: (value: string) => void
-  onGroupChange: (value: string) => void
   onTagChange: (value: string) => void
   vendors: PricingVendor[]
-  groups: string[]
-  groupRatios?: Record<string, number>
   tags: string[]
   models: PricingModel[]
   hasActiveFilters: boolean
@@ -284,15 +280,11 @@ export function PricingToolbar(props: PricingToolbarProps) {
             <PricingSidebar
               quotaTypeFilter={props.quotaTypeFilter}
               vendorFilter={props.vendorFilter}
-              groupFilter={props.groupFilter}
               tagFilter={props.tagFilter}
               onQuotaTypeChange={props.onQuotaTypeChange}
               onVendorChange={props.onVendorChange}
-              onGroupChange={props.onGroupChange}
               onTagChange={props.onTagChange}
               vendors={props.vendors}
-              groups={props.groups}
-              groupRatios={props.groupRatios}
               tags={props.tags}
               models={props.models}
               hasActiveFilters={props.hasActiveFilters}

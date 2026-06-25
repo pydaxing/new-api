@@ -97,7 +97,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
             <h3 className='text-foreground truncate font-mono text-[15px] leading-tight font-bold'>
               {props.model.model_name}
             </h3>
-            <div className='mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs sm:mt-1 sm:gap-x-3'>
+            <div className='mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[10px] sm:mt-1 sm:gap-x-3'>
               {dynamicSummary ? (
                 dynamicSummary.isSpecialExpression ? (
                   <span className='min-w-0'>
@@ -196,34 +196,33 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
         </div>
       </div>
 
-      {/* Description */}
-      <p className='text-muted-foreground mt-2 line-clamp-1 flex-1 text-[13px] leading-relaxed sm:mt-4 sm:line-clamp-2 sm:min-h-[2.5rem]'>
-        {props.model.description || t('No description available.')}
-      </p>
-
       {/* Footer: billing type + tags */}
-      <div className='mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 sm:mt-4'>
-        <span className='text-muted-foreground text-xs font-medium'>
-          {isTokenBased ? t('Token-based') : t('Per Request')}
-        </span>
-        {isDynamicPricing && (
-          <StatusBadge
-            label={t('Dynamic Pricing')}
-            variant='warning'
-            copyable={false}
-            size='sm'
-          />
-        )}
-        {tags.slice(0, maxVisibleTags).map((tag) => (
-          <span key={tag} className='text-muted-foreground/70 text-xs'>
-            {tag}
+      <div className='mt-2 flex min-w-0 items-center justify-between gap-y-1 sm:mt-4'>
+        <div className='flex items-center gap-x-2'>
+          <span className='text-muted-foreground text-xs font-medium'>
+            {isTokenBased ? t('Token-based') : t('Per Request')}
           </span>
-        ))}
-        {hiddenTagCount > 0 && (
-          <span className='text-muted-foreground/40 text-xs'>
-            +{hiddenTagCount}
-          </span>
-        )}
+          {isDynamicPricing && (
+            <StatusBadge
+              label={t('Dynamic Pricing')}
+              variant='warning'
+              copyable={false}
+              size='sm'
+            />
+          )}
+        </div>
+        <div className='flex items-center gap-x-1.5'>
+          {tags.slice(0, maxVisibleTags).map((tag) => (
+            <span key={tag} className='text-muted-foreground/70 text-xs'>
+              {tag}
+            </span>
+          ))}
+          {hiddenTagCount > 0 && (
+            <span className='text-muted-foreground/40 text-xs'>
+              +{hiddenTagCount}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   )
