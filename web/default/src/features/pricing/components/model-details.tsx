@@ -478,17 +478,20 @@ function ModelBackendProviderSection(props: { model: PricingModel }) {
   return (
     <section>
       <SectionTitle>{t('Model')}</SectionTitle>
-      <div className='flex flex-wrap gap-x-4 gap-y-3'>
+      <div className='divide-border/60 divide-y rounded-lg border'>
         {items.map((item) => (
-          <div key={item.label} className='flex items-center gap-1.5'>
-            <span className='text-muted-foreground text-xs font-medium'>
-              {item.label}:
+          <div
+            key={item.label}
+            className='flex items-center gap-3 px-3 py-2.5'
+          >
+            <span className='text-muted-foreground w-20 shrink-0 text-xs font-medium'>
+              {item.label}
             </span>
-            <div className='flex flex-wrap gap-1'>
+            <div className='flex min-w-0 flex-wrap gap-1.5'>
               {item.values.map((v) => (
                 <span
                   key={v}
-                  className='bg-muted text-foreground rounded-full px-2.5 py-0.5 text-xs font-medium'
+                  className='bg-muted text-foreground rounded-md px-2 py-0.5 text-xs font-medium'
                 >
                   {v}
                 </span>
@@ -1249,7 +1252,7 @@ export function ModelDetailsDrawer(props: ModelDetailsDrawerProps) {
       <SheetContent
         side='right'
         className={sideDrawerContentClassName(
-          'sm:max-w-2xl lg:max-w-3xl xl:max-w-4xl 2xl:max-w-5xl'
+          'sm:max-w-xl lg:max-w-2xl xl:max-w-3xl'
         )}
       >
         <SheetHeader className='sr-only'>

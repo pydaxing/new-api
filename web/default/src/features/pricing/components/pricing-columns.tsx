@@ -21,12 +21,10 @@ import { useTranslation } from 'react-i18next'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import {
   BadgeCell,
-  BadgeListCell,
   DataTableColumnHeader,
 } from '@/components/data-table'
-import { GroupBadge } from '@/components/group-badge'
 import { StatusBadge } from '@/components/status-badge'
-import { DEFAULT_TOKEN_UNIT, QUOTA_TYPE_VALUES } from '../constants'
+import { DEFAULT_TOKEN_UNIT } from '../constants'
 import {
   getDynamicDisplayGroupRatio,
   getDynamicPricingSummary,
@@ -87,25 +85,6 @@ export function usePricingColumns(
         )
       },
       minSize: 200,
-    },
-
-    // Type column
-    {
-      accessorKey: 'quota_type',
-      header: t('Type'),
-      cell: ({ row }) => {
-        const isTokenBased = row.original.quota_type === QUOTA_TYPE_VALUES.TOKEN
-        return (
-          <StatusBadge
-            label={isTokenBased ? t('Token') : t('Request')}
-            variant={isTokenBased ? 'info' : 'neutral'}
-            copyable={false}
-            className='-ml-1.5'
-          />
-        )
-      },
-      size: 80,
-      enableSorting: false,
     },
 
     // Price column
@@ -360,47 +339,5 @@ export function usePricingColumns(
       enableSorting: false,
     },
 
-    // Endpoints column
-    {
-      accessorKey: 'supported_endpoint_types',
-      header: t('Endpoints'),
-      cell: ({ row }) => {
-        const endpoints = row.original.supported_endpoint_types || []
-        return (
-          <BadgeListCell
-            items={endpoints.map((ep) => (
-              <StatusBadge
-                key={ep}
-                label={ep}
-                autoColor={ep}
-                size='sm'
-                copyable={false}
-              />
-            ))}
-          />
-        )
-      },
-      size: 130,
-      enableSorting: false,
-    },
-
-    // Enable Groups column
-    {
-      accessorKey: 'enable_groups',
-      header: t('Groups'),
-      cell: ({ row }) => {
-        const groups = row.original.enable_groups || []
-        return (
-          <BadgeListCell
-            items={groups.map((group) => (
-              <GroupBadge key={group} group={group} size='sm' />
-            ))}
-            tooltipClassName='max-w-[280px] p-2'
-          />
-        )
-      },
-      size: 130,
-      enableSorting: false,
-    },
   ]
 }

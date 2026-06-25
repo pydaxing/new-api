@@ -16,18 +16,20 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useState, useCallback } from 'react'
-import { type Row, type PaginationState } from '@tanstack/react-table'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { type Row } from '@tanstack/react-table'
+import { Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import {
-  DataTablePagination,
   DataTableRow,
   DataTableView,
   useDataTable,
 } from '@/components/data-table'
-import { DEFAULT_PRICING_PAGE_SIZE, DEFAULT_TOKEN_UNIT } from '../constants'
+import { DEFAULT_TOKEN_UNIT } from '../constants'
 import type { PricingModel, TokenUnit } from '../types'
 import { usePricingColumns } from './pricing-columns'
+
+const PAGE_SIZE = 30
 
 export interface PricingTableProps {
   models: PricingModel[]
@@ -51,10 +53,39 @@ export function PricingTable(props: PricingTableProps) {
     onModelClick,
   } = props
 
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: DEFAULT_PRICING_PAGE_SIZE,
-  })
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const sentinelRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE)
+  }, [models])
+
+  const loadMore = useCallback(() => {
+    setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, models.length))
+  }, [models.length])
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    if (!sentinel) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore()
+        }
+      },
+      { rootMargin: '200px' }
+    )
+
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [loadMore])
+
+  const visibleModels = useMemo(
+    () => models.slice(0, visibleCount),
+    [models, visibleCount]
+  )
+  const hasMore = visibleCount < models.length
 
   const columns = usePricingColumns({
     tokenUnit,
@@ -64,12 +95,11 @@ export function PricingTable(props: PricingTableProps) {
   })
 
   const { table } = useDataTable({
-    data: models,
+    data: visibleModels,
     columns,
-    pageCount: Math.ceil(models.length / pagination.pageSize),
-    pagination,
-    onPaginationChange: setPagination,
-    manualPagination: false,
+    pageCount: 1,
+    pagination: { pageIndex: 0, pageSize: visibleCount },
+    manualPagination: true,
     withFilteredRowModel: false,
     withSortedRowModel: false,
     withFacetedRowModel: false,
@@ -104,7 +134,14 @@ export function PricingTable(props: PricingTableProps) {
         )}
       />
 
-      {!isLoading && models.length > 0 && <DataTablePagination table={table} />}
+      {hasMore && (
+        <div ref={sentinelRef} className='flex justify-center py-4'>
+          <Loader2 className='text-muted-foreground size-5 animate-spin' />
+          <span className='text-muted-foreground ml-2 text-sm'>
+            {t('Loading more...')}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

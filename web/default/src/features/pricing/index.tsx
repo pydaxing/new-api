@@ -186,7 +186,7 @@ export function Pricing() {
             />
           </header>
 
-          <div className='grid gap-4 xl:grid-cols-[231px_minmax(0,1fr)]'>
+          <div className='grid gap-4 xl:grid-cols-[346px_minmax(0,1fr)]'>
             <PricingSidebar
               quotaTypeFilter={quotaTypeFilter}
               vendorFilter={vendorFilter}

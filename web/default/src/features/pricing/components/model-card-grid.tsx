@@ -16,13 +16,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useMemo, useState } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Button } from '@/components/ui/button'
-import { DEFAULT_PRICING_PAGE_SIZE, DEFAULT_TOKEN_UNIT } from '../constants'
+import { DEFAULT_TOKEN_UNIT } from '../constants'
 import type { PricingModel, TokenUnit } from '../types'
 import { ModelCard } from './model-card'
+
+const PAGE_SIZE = 30
 
 export interface ModelCardGridProps {
   models: PricingModel[]
@@ -35,25 +36,46 @@ export interface ModelCardGridProps {
 
 export function ModelCardGrid(props: ModelCardGridProps) {
   const { t } = useTranslation()
-  const [page, setPage] = useState(1)
-  const pageSize = DEFAULT_PRICING_PAGE_SIZE
   const tokenUnit = props.tokenUnit ?? DEFAULT_TOKEN_UNIT
-  const totalPages = Math.max(1, Math.ceil(props.models.length / pageSize))
-  const currentPage = Math.min(page, totalPages)
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
-  const pagedModels = useMemo(() => {
-    const start = (currentPage - 1) * pageSize
-    return props.models.slice(start, start + pageSize)
-  }, [currentPage, pageSize, props.models])
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE)
+  }, [props.models])
+
+  const loadMore = useCallback(() => {
+    setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, props.models.length))
+  }, [props.models.length])
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    if (!sentinel) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore()
+        }
+      },
+      { rootMargin: '200px' }
+    )
+
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [loadMore])
 
   if (props.models.length === 0) {
     return null
   }
 
+  const visibleModels = props.models.slice(0, visibleCount)
+  const hasMore = visibleCount < props.models.length
+
   return (
     <div className='space-y-4 sm:space-y-5'>
       <div className='grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3'>
-        {pagedModels.map((model) => (
+        {visibleModels.map((model) => (
           <ModelCard
             key={model.id ?? model.model_name}
             model={model}
@@ -61,46 +83,17 @@ export function ModelCardGrid(props: ModelCardGridProps) {
             priceRate={props.priceRate}
             usdExchangeRate={props.usdExchangeRate}
             showRechargePrice={props.showRechargePrice}
-
             onClick={() => props.onModelClick(model.model_name || '')}
           />
         ))}
       </div>
 
-      {totalPages > 1 && (
-        <div className='text-muted-foreground flex flex-col items-center justify-between gap-3 border-t px-4 py-3 text-sm sm:flex-row'>
-          <p className='text-muted-foreground'>
-            {t('Page {{current}} of {{total}}', {
-              current: currentPage,
-              total: totalPages,
-            })}
-          </p>
-          <div className='flex items-center gap-2'>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-              disabled={currentPage <= 1}
-              className='gap-1.5'
-            >
-              <ChevronLeft className='size-4' />
-              {t('Previous page')}
-            </Button>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={() =>
-                setPage((current) => Math.min(totalPages, current + 1))
-              }
-              disabled={currentPage >= totalPages}
-              className='gap-1.5'
-            >
-              {t('Next page')}
-              <ChevronRight className='size-4' />
-            </Button>
-          </div>
+      {hasMore && (
+        <div ref={sentinelRef} className='flex justify-center py-4'>
+          <Loader2 className='text-muted-foreground size-5 animate-spin' />
+          <span className='text-muted-foreground ml-2 text-sm'>
+            {t('Loading more...')}
+          </span>
         </div>
       )}
     </div>
