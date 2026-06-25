@@ -199,12 +199,13 @@ export function SyncWizardDialog({
           {SYNC_SOURCE_OPTIONS.map((option) => {
             const isActive = source === option.value
             return (
-              <label
+              <Label
                 key={option.value}
+                htmlFor={`sync-source-${option.value}`}
                 className={cn(
-                  'flex cursor-pointer flex-col items-start gap-0 rounded-lg border p-4 font-normal transition-all',
+                  'flex-col items-start gap-0 rounded-lg border p-4 font-normal transition-all',
                   isActive && 'border-primary ring-primary ring-1',
-                  'hover:border-primary/60'
+                  'hover:border-primary/60 cursor-pointer'
                 )}
               >
                 <div className='flex items-start gap-3'>
@@ -219,7 +220,7 @@ export function SyncWizardDialog({
                     </p>
                   </div>
                 </div>
-              </label>
+              </Label>
             )
           })}
         </RadioGroup>
