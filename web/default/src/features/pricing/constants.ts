@@ -17,6 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { type TFunction } from 'i18next'
+import { ENDPOINT_DISPLAY_NAMES } from '@/features/models/constants'
 import type { TokenUnit } from './types'
 
 // ----------------------------------------------------------------------------
@@ -85,14 +86,14 @@ export function getEndpointTypeLabels(
 ): Record<EndpointTypeOption, string> {
   return {
     [ENDPOINT_TYPES.ALL]: t('All Types'),
-    [ENDPOINT_TYPES.OPENAI]: 'Chat',
-    [ENDPOINT_TYPES.OPENAI_RESPONSE]: 'Response',
-    [ENDPOINT_TYPES.ANTHROPIC]: 'Anthropic',
-    [ENDPOINT_TYPES.GEMINI]: 'Gemini',
-    [ENDPOINT_TYPES.JINA_RERANK]: 'Rerank',
-    [ENDPOINT_TYPES.IMAGE_GENERATION]: t('Image'),
-    [ENDPOINT_TYPES.EMBEDDINGS]: t('Embeddings'),
-    [ENDPOINT_TYPES.OPENAI_VIDEO]: t('Video'),
+    [ENDPOINT_TYPES.OPENAI]: ENDPOINT_DISPLAY_NAMES['openai'] ?? 'Chat Completions',
+    [ENDPOINT_TYPES.OPENAI_RESPONSE]: ENDPOINT_DISPLAY_NAMES['openai-response'] ?? 'Responses',
+    [ENDPOINT_TYPES.ANTHROPIC]: ENDPOINT_DISPLAY_NAMES['anthropic'] ?? 'Messages (Anthropic)',
+    [ENDPOINT_TYPES.GEMINI]: ENDPOINT_DISPLAY_NAMES['gemini'] ?? 'Gemini Generate',
+    [ENDPOINT_TYPES.JINA_RERANK]: ENDPOINT_DISPLAY_NAMES['jina-rerank'] ?? 'Rerank',
+    [ENDPOINT_TYPES.IMAGE_GENERATION]: ENDPOINT_DISPLAY_NAMES['image-generation'] ?? t('Image Generation'),
+    [ENDPOINT_TYPES.EMBEDDINGS]: ENDPOINT_DISPLAY_NAMES['embeddings'] ?? t('Embeddings'),
+    [ENDPOINT_TYPES.OPENAI_VIDEO]: ENDPOINT_DISPLAY_NAMES['openai-video'] ?? t('Video Generation'),
   }
 }
 

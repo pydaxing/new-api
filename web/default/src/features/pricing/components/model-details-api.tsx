@@ -638,6 +638,9 @@ function buildSample(
 function CodeSamplesSection(props: {
   model: PricingModel
   endpointMap: Record<string, { path?: string; method?: string }>
+  endpoints: Array<{ type: string; path: string; method: string }>
+  endpointType: string
+  onEndpointTypeChange: (type: string) => void
 }) {
   const { t } = useTranslation()
   const { status } = useStatus()
@@ -655,23 +658,7 @@ function CodeSamplesSection(props: {
     return 'https://api.example.com'
   }, [status])
 
-  const endpoints = useMemo(() => {
-    const types = props.model.supported_endpoint_types || []
-    return types
-      .map((type) => {
-        const info = props.endpointMap[type] || {}
-        let path = info.path || ''
-        if (path && path.includes('{model}')) {
-          path = replaceModelInPath(path, props.model.model_name || '')
-        }
-        return { type, path, method: info.method || 'POST' }
-      })
-      .filter((e) => Boolean(e.path))
-  }, [props.model, props.endpointMap])
-
-  const [endpointType, setEndpointType] = useState<string>(
-    endpoints[0]?.type ?? ''
-  )
+  const { endpoints, endpointType, onEndpointTypeChange } = props
   const [lang, setLang] = useState<Lang>('curl')
 
   const activeEndpoint = useMemo(() => {
@@ -695,7 +682,7 @@ function CodeSamplesSection(props: {
       <SectionTitle icon={ScrollText}>{t('Code samples')}</SectionTitle>
 
       <div className='flex flex-wrap items-center gap-2'>
-        <Tabs value={endpointType} onValueChange={setEndpointType}>
+        <Tabs value={endpointType} onValueChange={onEndpointTypeChange}>
           <TabsList className='bg-muted/40 h-8 p-0.5'>
             {endpoints.map((ep) => (
               <TabsTrigger
@@ -745,11 +732,14 @@ function CodeSamplesSection(props: {
 // Supported parameters table
 // ---------------------------------------------------------------------------
 
-function SupportedParametersSection(props: { model: PricingModel }) {
+function SupportedParametersSection(props: {
+  model: PricingModel
+  endpointType?: string
+}) {
   const { t } = useTranslation()
   const params = useMemo(
-    () => buildSupportedParameters(props.model),
-    [props.model]
+    () => buildSupportedParameters(props.model, props.endpointType),
+    [props.model, props.endpointType]
   )
 
   if (params.length === 0) return null
@@ -955,11 +945,38 @@ export function ModelDetailsApi(props: {
   model: PricingModel
   endpointMap: Record<string, { path?: string; method?: string }>
 }) {
+  const endpoints = useMemo(() => {
+    const types = props.model.supported_endpoint_types || []
+    return types
+      .map((type) => {
+        const info = props.endpointMap[type] || {}
+        let path = info.path || ''
+        if (path && path.includes('{model}')) {
+          path = replaceModelInPath(path, props.model.model_name || '')
+        }
+        return { type, path, method: info.method || 'POST' }
+      })
+      .filter((e) => Boolean(e.path))
+  }, [props.model, props.endpointMap])
+
+  const [endpointType, setEndpointType] = useState<string>(
+    endpoints[0]?.type ?? ''
+  )
+
   return (
     <div className='space-y-6'>
-      <CodeSamplesSection model={props.model} endpointMap={props.endpointMap} />
+      <CodeSamplesSection
+        model={props.model}
+        endpointMap={props.endpointMap}
+        endpoints={endpoints}
+        endpointType={endpointType}
+        onEndpointTypeChange={setEndpointType}
+      />
       <AuthSection />
-      <SupportedParametersSection model={props.model} />
+      <SupportedParametersSection
+        model={props.model}
+        endpointType={endpointType}
+      />
       <RateLimitsSection model={props.model} />
     </div>
   )

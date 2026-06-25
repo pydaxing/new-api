@@ -663,6 +663,76 @@ const REASONING_PARAMS: SupportedParameter[] = [
   },
 ]
 
+const RESPONSE_PARAMS: SupportedParameter[] = [
+  {
+    name: 'input',
+    type: 'string',
+    required: true,
+    descriptionKey: 'User message text or array of content items',
+  },
+  {
+    name: 'instructions',
+    type: 'string',
+    descriptionKey: 'System instructions for the model',
+  },
+  {
+    name: 'temperature',
+    type: 'number',
+    defaultValue: 1,
+    range: '0 ~ 2',
+    descriptionKey: 'Sampling temperature; lower is more deterministic',
+  },
+  {
+    name: 'top_p',
+    type: 'number',
+    defaultValue: 1,
+    range: '0 ~ 1',
+    descriptionKey: 'Nucleus sampling probability mass',
+  },
+  {
+    name: 'max_output_tokens',
+    type: 'integer',
+    range: '>= 1',
+    descriptionKey: 'Maximum number of tokens in the response output',
+  },
+  {
+    name: 'stream',
+    type: 'boolean',
+    defaultValue: false,
+    descriptionKey: 'Stream tokens via Server-Sent Events',
+  },
+  {
+    name: 'tools',
+    type: 'array',
+    descriptionKey: 'Tool / function declarations the model may call',
+  },
+  {
+    name: 'tool_choice',
+    type: 'string',
+    enumValues: ['auto', 'none', 'required'],
+    descriptionKey: 'Tool-choice policy or specific tool name',
+  },
+  {
+    name: 'previous_response_id',
+    type: 'string',
+    descriptionKey: 'ID of a previous response for multi-turn conversations',
+  },
+  {
+    name: 'truncation',
+    type: 'enum',
+    enumValues: ['auto', 'disabled'],
+    defaultValue: 'disabled',
+    descriptionKey:
+      'Whether to truncate context when it exceeds the model limit',
+  },
+  {
+    name: 'store',
+    type: 'boolean',
+    defaultValue: true,
+    descriptionKey: 'Whether to store the response for later retrieval',
+  },
+]
+
 const EMBEDDING_PARAMS: SupportedParameter[] = [
   {
     name: 'input',
@@ -785,11 +855,19 @@ function apiCategoryOf(model: PricingModel): ApiCategory {
 /**
  * Build the list of request parameters that the model accepts. The list is
  * shaped per-modality so reasoning, embedding, image, video and chat models
- * each show their relevant parameter set.
+ * each show their relevant parameter set. When an endpointType is provided,
+ * it takes precedence for endpoint-specific parameter sets (e.g. Responses).
  */
 export function buildSupportedParameters(
-  model: PricingModel
+  model: PricingModel,
+  endpointType?: string
 ): SupportedParameter[] {
+  if (
+    endpointType === 'openai-response' ||
+    endpointType === 'openai-response-compact'
+  ) {
+    return RESPONSE_PARAMS
+  }
   const cat = apiCategoryOf(model)
   if (cat === 'reasoning') return REASONING_PARAMS
   if (cat === 'embedding') return EMBEDDING_PARAMS
