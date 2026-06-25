@@ -18,7 +18,6 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import {
   Plus,
-  MoreHorizontal,
   RefreshCw,
   List,
   Building2,
@@ -62,50 +61,50 @@ export function ModelsPrimaryButtons() {
   }
 
   return (
-    <div className='flex items-center gap-2'>
-      {/* Create Model */}
-      <Button onClick={handleCreateModel} size='sm'>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={<Button size='sm' className='bg-black text-white hover:bg-black/80' />}
+      >
         <Plus className='h-4 w-4' />
-        {t('Add Model')}
-      </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='end' className='w-56'>
+        <DropdownMenuItem onClick={handleCreateModel}>
+          {t('Add Model')}
+          <DropdownMenuShortcut>
+            <Plus className='h-4 w-4' />
+          </DropdownMenuShortcut>
+        </DropdownMenuItem>
 
-      {/* More Actions */}
-      <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant='outline' size='sm' />}>
-          <MoreHorizontal className='h-4 w-4' />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align='end' className='w-56'>
-          <DropdownMenuItem onClick={handleMissingModels}>
-            {t('Missing Models')}
-            <DropdownMenuShortcut>
-              <AlertCircle className='h-4 w-4' />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleSync}>
+          {t('Sync Upstream')}
+          <DropdownMenuShortcut>
+            <RefreshCw className='h-4 w-4' />
+          </DropdownMenuShortcut>
+        </DropdownMenuItem>
 
-          <DropdownMenuItem onClick={handleSync}>
-            {t('Sync Upstream')}
-            <DropdownMenuShortcut>
-              <RefreshCw className='h-4 w-4' />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleMissingModels}>
+          {t('Missing Models')}
+          <DropdownMenuShortcut>
+            <AlertCircle className='h-4 w-4' />
+          </DropdownMenuShortcut>
+        </DropdownMenuItem>
 
-          <DropdownMenuSeparator />
+        <DropdownMenuSeparator />
 
-          <DropdownMenuItem onClick={handlePrefillGroups}>
-            {t('Prefill Groups')}
-            <DropdownMenuShortcut>
-              <List className='h-4 w-4' />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
+        <DropdownMenuItem onClick={handlePrefillGroups}>
+          {t('Prefill Groups')}
+          <DropdownMenuShortcut>
+            <List className='h-4 w-4' />
+          </DropdownMenuShortcut>
+        </DropdownMenuItem>
 
-          <DropdownMenuItem onClick={handleManageVendors}>
-            {t('Manage Vendors')}
-            <DropdownMenuShortcut>
-              <Building2 className='h-4 w-4' />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+        <DropdownMenuItem onClick={handleManageVendors}>
+          {t('Manage Vendors')}
+          <DropdownMenuShortcut>
+            <Building2 className='h-4 w-4' />
+          </DropdownMenuShortcut>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

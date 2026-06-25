@@ -28,7 +28,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Dialog } from '@/components/dialog'
-import { StatusBadge } from '@/components/status-badge'
 import { getUpstreamChannels } from '@/features/system-settings/api'
 import {
   syncUpstream,
@@ -194,53 +193,33 @@ export function SyncWizardDialog({
         </div>
         <RadioGroup
           value={source}
-          onValueChange={(value) => {
-            const selected = SYNC_SOURCE_OPTIONS.find(
-              (option) => option.value === value
-            )
-            if (!selected || selected.disabled) return
-            setSource(selected.value)
-          }}
+          onValueChange={(value) => setSource(value as SyncSource)}
           className='grid gap-3 md:grid-cols-2'
         >
           {SYNC_SOURCE_OPTIONS.map((option) => {
             const isActive = source === option.value
-            const isDisabled = option.disabled
             return (
-              <Label
+              <label
                 key={option.value}
-                htmlFor={`sync-source-${option.value}`}
                 className={cn(
-                  'flex-col items-start gap-0 rounded-lg border p-4 font-normal transition-all',
+                  'flex cursor-pointer flex-col items-start gap-0 rounded-lg border p-4 font-normal transition-all',
                   isActive && 'border-primary ring-primary ring-1',
-                  isDisabled
-                    ? 'cursor-not-allowed opacity-60'
-                    : 'hover:border-primary/60 cursor-pointer'
+                  'hover:border-primary/60'
                 )}
               >
                 <div className='flex items-start gap-3'>
                   <RadioGroupItem
                     value={option.value}
                     id={`sync-source-${option.value}`}
-                    disabled={isDisabled}
                   />
                   <div className='space-y-1'>
-                    <div className='flex items-center gap-2'>
-                      <span className='font-medium'>{option.label}</span>
-                      {option.value === 'official' && (
-                        <StatusBadge
-                          label='Default'
-                          variant='neutral'
-                          copyable={false}
-                        />
-                      )}
-                    </div>
+                    <span className='font-medium'>{option.label}</span>
                     <p className='text-muted-foreground text-sm'>
                       {option.description}
                     </p>
                   </div>
                 </div>
-              </Label>
+              </label>
             )
           })}
         </RadioGroup>
