@@ -272,26 +272,14 @@ export function RechargeFormCard({
               )}
 
               <div className='space-y-2.5 sm:space-y-3'>
-                <Label
-                  htmlFor='topup-amount'
-                  className='text-muted-foreground text-xs font-medium tracking-wider uppercase'
-                >
-                  {t('Custom Amount')}
-                </Label>
                 <div className='grid grid-cols-[minmax(0,1fr)_minmax(110px,0.55fr)] gap-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center'>
-                  <div className='relative'>
-                    <span className='text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium'>
-                      $
+                  <div className='bg-muted/30 flex min-h-9 items-center justify-between gap-2 rounded-md border px-3 lg:min-w-52'>
+                    <span className='text-muted-foreground truncate text-xs'>
+                      {t('充值金额:')}
                     </span>
-                    <Input
-                      id='topup-amount'
-                      type='number'
-                      value={localAmount}
-                      onChange={(e) => handleAmountChange(e.target.value)}
-                      min={minTopup}
-                      placeholder={`Minimum ${minTopup}`}
-                      className='h-9 pl-7 text-base sm:h-10 sm:text-lg'
-                    />
+                    <span className='text-sm font-semibold'>
+                      ${formatNumber(topupAmount)}
+                    </span>
                   </div>
                   <div className='bg-muted/30 flex min-h-9 items-center justify-between gap-2 rounded-md border px-3 lg:min-w-52'>
                     <span className='text-muted-foreground truncate text-xs'>

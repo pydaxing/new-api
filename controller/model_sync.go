@@ -954,10 +954,13 @@ func SyncFromChannels(c *gin.Context) {
 				mi.VendorID = getOrCreateVendorID(supplierName, vendorIDCache)
 			}
 		}
-		// Fallback vendor from scraped data
-		if mi.VendorID == 0 {
-			if scraped, ok := scrapedData[name]; ok && scraped.Vendor != "" {
+		// Fallback vendor and icon from scraped data
+		if scraped, ok := scrapedData[name]; ok && scraped.Vendor != "" {
+			if mi.VendorID == 0 {
 				mi.VendorID = getOrCreateVendorID(scraped.Vendor, vendorIDCache)
+			}
+			if mi.Icon == "" {
+				mi.Icon = scraped.Vendor + ".Color"
 			}
 		}
 
@@ -1059,6 +1062,11 @@ func SyncFromChannels(c *gin.Context) {
 			vid := getOrCreateVendorID(scraped.Vendor, scrapeVendorCache)
 			if vid > 0 && local.VendorID != vid {
 				local.VendorID = vid
+				needUpdate = true
+			}
+			icon := scraped.Vendor + ".Color"
+			if local.Icon != icon {
+				local.Icon = icon
 				needUpdate = true
 			}
 		}
