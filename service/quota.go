@@ -47,14 +47,6 @@ func hasCustomModelRatio(modelName string, currentRatio float64) bool {
 	return currentRatio != defaultRatio
 }
 
-// roundQuotaToFourDecimals rounds quota to $0.0001 precision (nearest 50 internal units).
-func roundQuotaToFourDecimals(quota int) int {
-	if quota <= 0 {
-		return quota
-	}
-	return ((quota + 25) / 50) * 50
-}
-
 func calculateAudioQuota(info QuotaInfo) int {
 	if info.UsePrice {
 		modelPrice := decimal.NewFromFloat(info.ModelPrice)
@@ -91,7 +83,7 @@ func calculateAudioQuota(info QuotaInfo) int {
 		quota = decimal.NewFromInt(1)
 	}
 
-	return roundQuotaToFourDecimals(int(quota.Round(0).IntPart()))
+	return int(quota.Round(0).IntPart())
 }
 
 func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.RealtimeUsage) error {

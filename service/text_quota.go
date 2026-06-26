@@ -145,15 +145,15 @@ func composeTieredTextQuota(relayInfo *relaycommon.RelayInfo, summary textQuotaS
 
 	if tieredResult != nil {
 		if snap := relayInfo.TieredBillingSnapshot; snap != nil {
-			return roundQuotaToFourDecimals(int(decimal.NewFromFloat(tieredResult.ActualQuotaBeforeGroup).
+			return int(decimal.NewFromFloat(tieredResult.ActualQuotaBeforeGroup).
 				Mul(decimal.NewFromFloat(snap.GroupRatio)).
 				Add(summary.ToolCallSurchargeQuota).
 				Round(0).
-				IntPart()))
+				IntPart())
 		}
 	}
 
-	return roundQuotaToFourDecimals(tieredQuota + int(summary.ToolCallSurchargeQuota.Round(0).IntPart()))
+	return tieredQuota + int(summary.ToolCallSurchargeQuota.Round(0).IntPart())
 }
 
 func calculateTextQuotaSummary(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage) textQuotaSummary {
@@ -287,7 +287,7 @@ func calculateTextQuotaSummary(ctx *gin.Context, relayInfo *relaycommon.RelayInf
 		if !ratio.IsZero() && quotaCalculateDecimal.LessThanOrEqual(decimal.Zero) {
 			quotaCalculateDecimal = decimal.NewFromInt(1)
 		}
-		summary.Quota = roundQuotaToFourDecimals(int(quotaCalculateDecimal.Round(0).IntPart()))
+		summary.Quota = int(quotaCalculateDecimal.Round(0).IntPart())
 	} else {
 		quotaCalculateDecimal := dModelPrice.Mul(dQuotaPerUnit).Mul(dGroupRatio)
 		quotaCalculateDecimal = quotaCalculateDecimal.Add(summary.ToolCallSurchargeQuota)
@@ -297,7 +297,7 @@ func calculateTextQuotaSummary(ctx *gin.Context, relayInfo *relaycommon.RelayInf
 				quotaCalculateDecimal = quotaCalculateDecimal.Mul(decimal.NewFromFloat(otherRatio))
 			}
 		}
-		summary.Quota = roundQuotaToFourDecimals(int(quotaCalculateDecimal.Round(0).IntPart()))
+		summary.Quota = int(quotaCalculateDecimal.Round(0).IntPart())
 	}
 
 	if summary.TotalTokens == 0 {

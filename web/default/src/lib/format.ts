@@ -207,7 +207,7 @@ export function formatTimeStr(date: Date): string {
 export function formatLogQuota(quota: number): string {
   return formatQuotaWithCurrency(quota, {
     digitsLarge: 4,
-    digitsSmall: 4,
+    digitsSmall: 6,
     abbreviate: false,
   })
 }
