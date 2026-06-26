@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import {
   BadgeCell,
+  BadgeListCell,
   DataTableColumnHeader,
 } from '@/components/data-table'
 import { StatusBadge } from '@/components/status-badge'

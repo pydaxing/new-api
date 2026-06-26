@@ -476,31 +476,21 @@ function ModelBackendProviderSection(props: { model: PricingModel }) {
   if (items.length === 0) return null
 
   return (
-    <section>
-      <SectionTitle>{t('Model')}</SectionTitle>
-      <div className='divide-border/60 divide-y rounded-lg border'>
-        {items.map((item) => (
-          <div
-            key={item.label}
-            className='flex items-center gap-3 px-3 py-2.5'
+    <div className='flex flex-wrap gap-2'>
+      {items.map((item) =>
+        item.values.map((v) => (
+          <span
+            key={`${item.label}-${v}`}
+            className='bg-muted/60 text-foreground inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs'
           >
-            <span className='text-muted-foreground w-20 shrink-0 text-xs font-medium'>
+            <span className='text-muted-foreground font-medium'>
               {item.label}
             </span>
-            <div className='flex min-w-0 flex-wrap gap-1.5'>
-              {item.values.map((v) => (
-                <span
-                  key={v}
-                  className='bg-muted text-foreground rounded-md px-2 py-0.5 text-xs font-medium'
-                >
-                  {v}
-                </span>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
+            <span className='font-semibold'>{v}</span>
+          </span>
+        ))
+      )}
+    </div>
   )
 }
 
@@ -1148,7 +1138,6 @@ function EndpointListSection(props: {
 
   return (
     <section>
-      <SectionTitle>{t('Endpoints')}</SectionTitle>
       <div className='divide-border/60 divide-y rounded-lg border'>
         {items.map((item) => (
           <div
@@ -1197,6 +1186,11 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
       <ModelHeader model={props.model} />
 
       <div className='space-y-6'>
+        <EndpointListSection
+          endpointMap={props.endpointMap}
+          model={props.model}
+        />
+
         <section className='bg-card/60 space-y-5 rounded-xl border p-4 shadow-sm'>
           <SectionTitle>{t('Pricing')}</SectionTitle>
           <PriceSection
@@ -1209,22 +1203,7 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
           {isDynamic && (
             <DynamicPricingBreakdown billingExpr={props.model.billing_expr} />
           )}
-          <GroupPricingSection
-            model={props.model}
-            groupRatio={props.groupRatio}
-            usableGroup={props.usableGroup}
-            autoGroups={props.autoGroups}
-            priceRate={props.priceRate}
-            usdExchangeRate={props.usdExchangeRate}
-            tokenUnit={props.tokenUnit}
-            showRechargePrice={showRechargePrice}
-          />
         </section>
-
-        <EndpointListSection
-          endpointMap={props.endpointMap}
-          model={props.model}
-        />
 
         <OverviewSummaryGrid model={props.model} />
 
