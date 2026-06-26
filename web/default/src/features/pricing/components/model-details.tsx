@@ -35,6 +35,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CopyButton } from '@/components/copy-button'
 import { sideDrawerContentClassName } from '@/components/drawer-layout'
 import { PublicLayout } from '@/components/layout'
+import { StatusBadge } from '@/components/status-badge'
 import { getPerfMetrics } from '@/features/performance-metrics/api'
 import {
   formatLatency,
@@ -51,6 +52,7 @@ import {
   getDynamicPricingTiers,
   isDynamicPricingModel,
 } from '../lib/dynamic-price'
+import { parseTags } from '../lib/filters'
 import { getAvailableGroups, isTokenBasedModel } from '../lib/model-helpers'
 import { formatFixedPrice, formatGroupPrice } from '../lib/price'
 import type { PriceType, PricingModel, TokenUnit } from '../types'
@@ -774,10 +776,31 @@ export interface ModelDetailsContentProps {
 
 export function ModelDetailsContent(props: ModelDetailsContentProps) {
   const showRechargePrice = props.showRechargePrice ?? false
+  const tags = parseTags(props.model.tags)
 
   return (
     <div className='@container/details space-y-4'>
       <ModelHeader model={props.model} />
+
+      {tags.length > 0 && (
+        <div className='flex flex-wrap gap-1.5'>
+          {tags.map((tag) => (
+            <StatusBadge
+              key={tag}
+              label={tag}
+              autoColor={tag}
+              copyable={false}
+              size='sm'
+            />
+          ))}
+        </div>
+      )}
+
+      {props.model.description && (
+        <div className='text-muted-foreground rounded-lg border px-4 py-3 text-sm leading-relaxed'>
+          {props.model.description}
+        </div>
+      )}
 
       <div className='space-y-6'>
         <EndpointListSection

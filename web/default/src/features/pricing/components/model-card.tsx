@@ -197,6 +197,13 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
         </div>
       </div>
 
+      {/* Description: max 2 lines */}
+      {props.model.description && (
+        <p className='text-muted-foreground mt-2 line-clamp-2 text-xs leading-relaxed sm:mt-3'>
+          {props.model.description}
+        </p>
+      )}
+
       {/* Footer: billing type + tags */}
       <div className='mt-2 flex min-w-0 items-center justify-between gap-y-1 sm:mt-4'>
         <div className='flex items-center gap-x-2'>
