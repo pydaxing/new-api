@@ -55,6 +55,7 @@ interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   plan: PlanRecord | null
+  priceRatio?: number
   enableStripe?: boolean
   enableCreem?: boolean
   enableWaffoPancake?: boolean
@@ -96,7 +97,8 @@ export function SubscriptionPurchaseDialog(props: Props) {
     selectedEpayMethod ||
     t('Select payment method')
   const totalAmount = Number(plan.total_amount || 0)
-  const price = Number(plan.price_amount || 0).toFixed(2)
+  const priceRatio = props.priceRatio ?? 1
+  const priceCny = (Number(plan.price_amount || 0) * priceRatio).toFixed(2)
   const quotaPerUnit =
     currency?.quotaPerUnit && currency.quotaPerUnit > 0
       ? currency.quotaPerUnit
@@ -315,7 +317,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
           <Separator />
           <div className='flex items-center justify-between'>
             <span className='text-sm font-medium'>{t('Amount Due')}</span>
-            <span className='text-primary text-lg font-bold'>${price}</span>
+            <span className='text-primary text-lg font-bold'>￥{priceCny}</span>
           </div>
         </div>
 

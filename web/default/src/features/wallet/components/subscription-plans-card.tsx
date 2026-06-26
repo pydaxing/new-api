@@ -642,6 +642,7 @@ export function SubscriptionPlansCard({
           }
         }}
         plan={selectedPlan}
+        priceRatio={priceRatio}
         enableStripe={enableStripe}
         enableCreem={enableCreem}
         enableWaffoPancake={enableWaffoPancake}
