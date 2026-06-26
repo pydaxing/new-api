@@ -68,8 +68,8 @@ export function getDiscountLabel(discount: number): string {
   if (discount >= DEFAULT_DISCOUNT_RATE) {
     return ''
   }
-  const off = Math.round((1 - discount) * 100)
-  return `${off}% OFF`
+  const zhe = Math.round(discount * 100) / 10
+  return `${zhe}折`
 }
 
 /**

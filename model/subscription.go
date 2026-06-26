@@ -372,6 +372,13 @@ func calcNextResetTime(base time.Time, plan *SubscriptionPlan, endUnix int64) in
 	return next.Unix()
 }
 
+func DeleteSubscriptionPlan(id int) error {
+	if id <= 0 {
+		return errors.New("invalid plan id")
+	}
+	return DB.Delete(&SubscriptionPlan{}, id).Error
+}
+
 func GetSubscriptionPlanById(id int) (*SubscriptionPlan, error) {
 	return getSubscriptionPlanByIdTx(nil, id)
 }

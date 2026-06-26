@@ -239,29 +239,28 @@ export function RechargeFormCard({
                           key={index}
                           variant='outline'
                           className={cn(
-                            'flex min-h-16 flex-col items-start rounded-lg px-3 py-2.5 text-left whitespace-normal sm:min-h-[72px] sm:p-4',
+                            'relative flex min-h-16 flex-col items-start overflow-hidden rounded-lg px-3 py-2.5 text-left whitespace-normal sm:min-h-[72px] sm:p-4',
                             selectedPreset === preset.value
                               ? 'border-foreground bg-foreground/5 dark:border-foreground dark:bg-foreground/10'
                               : 'border-muted'
                           )}
                           onClick={() => onSelectPreset(preset)}
                         >
-                          <div className='flex w-full items-center justify-between'>
-                            <div className='text-base font-semibold sm:text-lg'>
-                              {formatNumber(displayValue)}
-                            </div>
-                            {hasDiscount && (
-                              <div className='text-xs font-medium text-green-600'>
+                          {hasDiscount && (
+                            <div className='pointer-events-none absolute -right-[18px] -top-[18px] size-12'>
+                              <div className='absolute bottom-[6px] left-0 w-full rotate-45 bg-green-500 py-0.5 text-center text-[10px] font-bold text-white shadow-sm'>
                                 {getDiscountLabel(discount)}
                               </div>
-                            )}
+                            </div>
+                          )}
+                          <div className='text-base font-semibold sm:text-lg'>
+                            ${formatNumber(displayValue)}
                           </div>
                           <div className='text-muted-foreground mt-1.5 w-full text-xs sm:mt-2'>
-                            Pay {formatCurrency(actualPrice)}
+                            {t('实付')} ￥{formatCurrency(actualPrice)}
                             {hasDiscount && savedAmount > 0 && (
-                              <span className='text-green-600'>
-                                {' '}
-                                • Save {formatCurrency(savedAmount)}
+                              <span className='ml-1.5 text-green-600'>
+                                {t('省')} ￥{formatCurrency(savedAmount)}
                               </span>
                             )}
                           </div>

@@ -64,6 +64,7 @@ interface SubscriptionPlansCardProps {
   onAvailabilityChange?: (available: boolean) => void
   userQuota?: number
   onPurchaseSuccess?: () => void | Promise<void>
+  priceRatio?: number
 }
 
 function getEpayMethods(payMethods: PaymentMethod[] = []): PaymentMethod[] {
@@ -95,6 +96,7 @@ export function SubscriptionPlansCard({
   onAvailabilityChange,
   userQuota,
   onPurchaseSuccess,
+  priceRatio = 1,
 }: SubscriptionPlansCardProps) {
   const { t } = useTranslation()
 
@@ -517,7 +519,11 @@ export function SubscriptionPlansCard({
               const plan = p?.plan
               if (!plan) return null
               const totalAmount = Number(plan.total_amount || 0)
-              const price = Number(plan.price_amount || 0).toFixed(2)
+              const priceNum = Number(plan.price_amount || 0)
+              const price = priceNum.toFixed(2)
+              const actualPriceCny = priceNum * priceRatio
+              const equivalentTopupCny = (totalAmount / 500000) * priceRatio
+              const savedAmount = totalAmount > 0 ? equivalentTopupCny - actualPriceCny : 0
               const isPopular = index === 0 && plans.length > 1
               const limit = Number(plan.max_purchase_per_user || 0)
               const count = planPurchaseCountMap.get(plan.id) || 0
@@ -569,8 +575,13 @@ export function SubscriptionPlansCard({
 
                     <div className='py-2'>
                       <span className='text-primary text-2xl font-bold'>
-                        ${price}
+                        ￥{actualPriceCny.toFixed(2)}
                       </span>
+                      {savedAmount > 0 && (
+                        <span className='ml-2 text-sm font-medium text-green-600'>
+                          {t('省')} ￥{savedAmount.toFixed(2)}
+                        </span>
+                      )}
                     </div>
 
                     <div className='flex-1 space-y-1.5 pb-3'>
