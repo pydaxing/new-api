@@ -29,7 +29,7 @@ import {
 import { DataTableColgroup } from './data-table-colgroup'
 import { DataTableHeader } from './data-table-header'
 import { DataTableRow } from './data-table-row'
-import { TableEmpty } from './table-empty'
+import { TableEmpty, TableEmptyContent } from './table-empty'
 import { getTableSizeStyle } from './table-sizing'
 import { TableSkeleton } from './table-skeleton'
 import type {
@@ -127,6 +127,7 @@ function SplitHeaderTableView<TData>({
   getColumnClassName: DataTableColumnClassName
 }) {
   const tableSizing = getTableSizing(props)
+  const isEmpty = rows.length === 0 && !props.isLoading
 
   return (
     <div
@@ -160,8 +161,21 @@ function SplitHeaderTableView<TData>({
             rowClassName={props.tableHeaderRowClassName}
             getColumnClassName={getColumnClassName}
           />
-          {renderTableBody(props, rows, colSpan, getColumnClassName)}
+          {!isEmpty && renderTableBody(props, rows, colSpan, getColumnClassName)}
         </table>
+        {isEmpty && (
+          <div className='flex h-[400px] items-center justify-center'>
+            {props.emptyContent ?? (
+              <TableEmptyContent
+                title={props.emptyTitle}
+                description={props.emptyDescription}
+                icon={props.emptyIcon}
+              >
+                {props.emptyAction}
+              </TableEmptyContent>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

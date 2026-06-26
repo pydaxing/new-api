@@ -53,10 +53,37 @@ interface TableEmptyProps {
   children?: React.ReactNode
 }
 
-/**
- * Generic table empty state component
- * Displays a centered empty state message when table has no data
- */
+export interface TableEmptyContentProps {
+  title?: string
+  description?: string
+  icon?: React.ReactNode
+  children?: React.ReactNode
+}
+
+export function TableEmptyContent({
+  title,
+  description,
+  icon,
+  children,
+}: TableEmptyContentProps) {
+  const { t } = useTranslation()
+  const resolvedTitle = title ?? t('No Data')
+  const resolvedDescription =
+    description ?? t('No records found. Try adjusting your filters.')
+  return (
+    <Empty>
+      <EmptyHeader>
+        <EmptyMedia variant='icon'>
+          {icon || <Database className='size-6' />}
+        </EmptyMedia>
+        <EmptyTitle>{resolvedTitle}</EmptyTitle>
+        <EmptyDescription>{resolvedDescription}</EmptyDescription>
+      </EmptyHeader>
+      {children}
+    </Empty>
+  )
+}
+
 export function TableEmpty({
   colSpan,
   title,
@@ -64,25 +91,16 @@ export function TableEmpty({
   icon,
   children,
 }: TableEmptyProps) {
-  const { t } = useTranslation()
-  const resolvedTitle = title ?? t('No Data')
-  const resolvedDescription =
-    description ?? t('No records found. Try adjusting your filters.')
   return (
     <TableRow>
       <TableCell colSpan={colSpan} className='h-[400px] p-0'>
-        <div className='sticky left-0 flex h-full w-[min(100%,100vw)] items-center justify-center'>
-          <Empty>
-            <EmptyHeader>
-              <EmptyMedia variant='icon'>
-                {icon || <Database className='size-6' />}
-              </EmptyMedia>
-              <EmptyTitle>{resolvedTitle}</EmptyTitle>
-              <EmptyDescription>{resolvedDescription}</EmptyDescription>
-            </EmptyHeader>
-            {children}
-          </Empty>
-        </div>
+        <TableEmptyContent
+          title={title}
+          description={description}
+          icon={icon}
+        >
+          {children}
+        </TableEmptyContent>
       </TableCell>
     </TableRow>
   )
