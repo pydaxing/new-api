@@ -199,7 +199,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
 
       {/* Description: max 2 lines */}
       {props.model.description && (
-        <p className='text-muted-foreground mt-2 line-clamp-2 text-xs leading-relaxed sm:mt-3'>
+        <p className='text-muted-foreground mt-2 min-h-[2lh] line-clamp-2 text-xs leading-relaxed sm:mt-3'>
           {props.model.description}
         </p>
       )}

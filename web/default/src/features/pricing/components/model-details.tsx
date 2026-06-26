@@ -614,7 +614,7 @@ function GroupPricingSection(props: {
               </div>
               <div className='flex flex-1 flex-wrap items-baseline justify-end gap-x-6 gap-y-1'>
                 {dynPriceFields.map((field) => (
-                  <div key={field.field} className='text-right'>
+                  <div key={field.field} className='min-w-[5rem] text-right'>
                     <div className='text-muted-foreground text-[10px]'>
                       {t(field.shortLabel)}
                     </div>
@@ -677,7 +677,7 @@ function GroupPricingSection(props: {
             {isTokenBased ? (
               <div className='flex flex-1 flex-wrap items-baseline justify-end gap-x-6 gap-y-1'>
                 {priceFields.map((field) => (
-                  <div key={field.type} className='text-right'>
+                  <div key={field.type} className='min-w-[5rem] text-right'>
                     <div className='text-muted-foreground text-[10px]'>
                       {field.label}
                     </div>
