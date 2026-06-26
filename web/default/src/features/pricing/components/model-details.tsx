@@ -69,6 +69,14 @@ function formatRatioLabel(ratio: number): string {
   return `${formatted}折`
 }
 
+const GRID_COLS: Record<number, string> = {
+  1: 'grid-cols-1',
+  2: 'grid-cols-2',
+  3: 'grid-cols-3',
+  4: 'grid-cols-4',
+  5: 'grid-cols-5',
+}
+
 
 function OverviewMetric(props: {
   icon: React.ComponentType<{ className?: string }>
@@ -308,7 +316,12 @@ function PriceSection(props: {
     return (
       <div className='space-y-3'>
         {dynamicSummary.primaryEntries.length > 0 ? (
-          <div className='grid grid-cols-2 gap-3'>
+          <div
+            className={cn(
+              'grid gap-3',
+              GRID_COLS[dynamicSummary.primaryEntries.length] ?? 'grid-cols-2'
+            )}
+          >
             {dynamicSummary.primaryEntries.map((entry) => (
               <div key={entry.key} className='bg-muted/50 rounded-lg p-5'>
                 <div className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
@@ -331,7 +344,12 @@ function PriceSection(props: {
           </p>
         )}
         {dynamicSummary.secondaryEntries.length > 0 && (
-          <div className='grid grid-cols-3 gap-2'>
+          <div
+            className={cn(
+              'grid gap-2',
+              GRID_COLS[dynamicSummary.secondaryEntries.length] ?? 'grid-cols-3'
+            )}
+          >
             {dynamicSummary.secondaryEntries.map((entry) => (
               <div key={entry.key} className='bg-muted/50 rounded-lg px-4 py-3'>
                 <div className='text-muted-foreground text-[11px]'>
@@ -412,7 +430,12 @@ function PriceSection(props: {
         </div>
       </div>
       {secondaryItems.length > 0 && (
-        <div className='grid grid-cols-3 gap-2'>
+        <div
+          className={cn(
+            'grid gap-2',
+            GRID_COLS[secondaryItems.length] ?? 'grid-cols-3'
+          )}
+        >
           {secondaryItems.map((item) => (
             <div key={item.type} className='bg-muted/50 rounded-lg px-4 py-3'>
               <div className='text-muted-foreground text-[11px]'>
@@ -587,7 +610,7 @@ function GroupPricingSection(props: {
                   {formatRatioLabel(ratio)}
                 </span>
               </div>
-              <div className='flex flex-1 flex-wrap items-baseline justify-end gap-x-4 gap-y-1'>
+              <div className='flex flex-1 flex-wrap items-baseline justify-end gap-x-6 gap-y-1'>
                 {dynPriceFields.map((field) => (
                   <div key={field.field} className='text-right'>
                     <div className='text-muted-foreground text-[10px]'>
@@ -650,7 +673,7 @@ function GroupPricingSection(props: {
               </span>
             </div>
             {isTokenBased ? (
-              <div className='flex flex-1 flex-wrap items-baseline justify-end gap-x-4 gap-y-1'>
+              <div className='flex flex-1 flex-wrap items-baseline justify-end gap-x-6 gap-y-1'>
                 {priceFields.map((field) => (
                   <div key={field.type} className='text-right'>
                     <div className='text-muted-foreground text-[10px]'>
