@@ -55,18 +55,19 @@ import {
 import { getAvailableGroups, isTokenBasedModel } from '../lib/model-helpers'
 import { formatFixedPrice, formatGroupPrice } from '../lib/price'
 import type { PriceType, PricingModel, TokenUnit } from '../types'
-import { DynamicPricingBreakdown } from './dynamic-pricing-breakdown'
 
 // ----------------------------------------------------------------------------
 // Local UI helpers
 // ----------------------------------------------------------------------------
 
-function SectionTitle(props: { children: React.ReactNode }) {
-  return (
-    <h2 className='text-muted-foreground mb-3 text-xs font-semibold tracking-wider uppercase'>
-      {props.children}
-    </h2>
-  )
+function formatRatioLabel(ratio: number): string {
+  if (ratio === 1) return '原价'
+  const discount = ratio * 10
+  const formatted =
+    discount === Math.floor(discount)
+      ? String(Math.floor(discount))
+      : discount.toFixed(1)
+  return `${formatted}折`
 }
 
 
@@ -346,7 +347,7 @@ function PriceSection(props: {
 
   if (!isTokenBased) {
     return (
-      <div className='bg-muted/30 inline-block rounded-lg p-4'>
+      <div className='bg-muted/30 rounded-lg p-4'>
         <div className='text-muted-foreground text-[10px] font-medium tracking-wider uppercase'>
           {t('Per Request')}
         </div>
@@ -411,36 +412,6 @@ function PriceSection(props: {
   )
 }
 
-// ----------------------------------------------------------------------------
-// Auto group chain (used inside group pricing section)
-// ----------------------------------------------------------------------------
-
-function AutoGroupChain(props: { model: PricingModel; autoGroups: string[] }) {
-  const { t } = useTranslation()
-  const modelEnableGroups = Array.isArray(props.model.enable_groups)
-    ? props.model.enable_groups
-    : []
-  const autoChain = props.autoGroups.filter((g) =>
-    modelEnableGroups.includes(g)
-  )
-
-  if (autoChain.length === 0) return null
-
-  return (
-    <div className='text-muted-foreground mb-3 flex flex-wrap items-center gap-1 text-xs'>
-      <span className='font-medium'>{t('Auto Group Chain')}</span>
-      <span className='text-muted-foreground/40'>→</span>
-      {autoChain.map((g, idx) => (
-        <span key={g} className='flex items-center gap-1'>
-          <GroupBadge group={g} size='sm' />
-          {idx < autoChain.length - 1 && (
-            <span className='text-muted-foreground/40'>→</span>
-          )}
-        </span>
-      ))}
-    </div>
-  )
-}
 
 type DynamicPriceOptions = Parameters<typeof getDynamicPriceEntries>[1]
 type DynamicPricingTier = ReturnType<typeof getDynamicPricingTiers>[number]
@@ -533,7 +504,6 @@ function GroupPricingSection(props: {
   if (availableGroups.length === 0) {
     return (
       <div>
-        <AutoGroupChain model={props.model} autoGroups={props.autoGroups} />
         <p className='text-muted-foreground text-sm'>
           {t(
             'This model is not available in any group, or no group pricing information is configured.'
@@ -549,7 +519,6 @@ function GroupPricingSection(props: {
     if (dynamicTiers.length === 0) {
       return (
         <div>
-          <AutoGroupChain model={props.model} autoGroups={props.autoGroups} />
           <div className='rounded-lg border border-amber-200/70 bg-amber-50/70 p-3 dark:border-amber-500/20 dark:bg-amber-500/10'>
             <div className='text-sm font-medium text-amber-800 dark:text-amber-200'>
               {t('Special billing expression')}
@@ -575,56 +544,45 @@ function GroupPricingSection(props: {
     const gridClass = GRID_COLS_CLASS[colCount] ?? 'grid-cols-3'
 
     return (
-      <details open>
-        <summary className='flex cursor-pointer items-center justify-between py-2'>
-          <span className='text-muted-foreground text-[10px] font-semibold tracking-wider uppercase'>
-            {t('Group Pricing')}
-          </span>
-          <span className='text-muted-foreground text-xs'>
-            {availableGroups.length} groups ▾
-          </span>
-        </summary>
-        <AutoGroupChain model={props.model} autoGroups={props.autoGroups} />
-        <div className='mt-2 space-y-2'>
-          {availableGroups.map((group) => {
-            const ratio = props.groupRatio[group] || 1
-            const pricesByTier = getDynamicFormattedPricesByTier(dynamicTiers, {
-              tokenUnit: props.tokenUnit,
-              showRechargePrice,
-              priceRate: props.priceRate,
-              usdExchangeRate: props.usdExchangeRate,
-              groupRatioMultiplier: ratio,
-            })
-            const firstTier = dynamicTiers[0]
-            const firstTierPrices = firstTier
-              ? pricesByTier.get(firstTier)
-              : undefined
+      <div className='space-y-2'>
+        {availableGroups.map((group) => {
+          const ratio = props.groupRatio[group] || 1
+          const pricesByTier = getDynamicFormattedPricesByTier(dynamicTiers, {
+            tokenUnit: props.tokenUnit,
+            showRechargePrice,
+            priceRate: props.priceRate,
+            usdExchangeRate: props.usdExchangeRate,
+            groupRatioMultiplier: ratio,
+          })
+          const firstTier = dynamicTiers[0]
+          const firstTierPrices = firstTier
+            ? pricesByTier.get(firstTier)
+            : undefined
 
-            return (
-              <div key={group} className='bg-muted/30 rounded-lg px-3 py-2.5'>
-                <div className='mb-2 flex items-center gap-2'>
-                  <GroupBadge group={group} size='sm' />
-                  <span className='rounded bg-blue-500/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-blue-300/90'>
-                    {ratio}x
-                  </span>
-                </div>
-                <div className={cn('grid gap-2 text-[11px]', gridClass)}>
-                  {dynPriceFields.map((field) => (
-                    <div key={field.field}>
-                      <div className='text-muted-foreground text-[9px]'>
-                        {t(field.shortLabel)}
-                      </div>
-                      <div className='text-foreground font-mono font-medium tabular-nums'>
-                        {firstTierPrices?.get(field.field) ?? '—'}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+          return (
+            <div key={group} className='bg-muted/30 rounded-lg px-3 py-2.5'>
+              <div className='mb-2 flex items-center gap-2'>
+                <GroupBadge group={group} size='sm' />
+                <span className='rounded bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-blue-300/90'>
+                  {formatRatioLabel(ratio)}
+                </span>
               </div>
-            )
-          })}
-        </div>
-      </details>
+              <div className={cn('grid gap-2 text-xs', gridClass)}>
+                {dynPriceFields.map((field) => (
+                  <div key={field.field}>
+                    <div className='text-muted-foreground text-[10px]'>
+                      {t(field.shortLabel)}
+                    </div>
+                    <div className='text-foreground font-mono font-medium tabular-nums'>
+                      {firstTierPrices?.get(field.field) ?? '—'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
     )
   }
 
@@ -652,50 +610,39 @@ function GroupPricingSection(props: {
   const gridClass = GRID_COLS_CLASS[priceFields.length] ?? 'grid-cols-3'
 
   return (
-    <details open>
-      <summary className='flex cursor-pointer items-center justify-between py-2'>
-        <span className='text-muted-foreground text-[10px] font-semibold tracking-wider uppercase'>
-          {t('Group Pricing')}
-        </span>
-        <span className='text-muted-foreground text-xs'>
-          {availableGroups.length} groups ▾
-        </span>
-      </summary>
-      <AutoGroupChain model={props.model} autoGroups={props.autoGroups} />
-      <div className='mt-2 space-y-2'>
-        {availableGroups.map((group) => {
-          const ratio = props.groupRatio[group] || 1
-          return (
-            <div key={group} className='bg-muted/30 rounded-lg px-3 py-2.5'>
-              <div className='mb-2 flex items-center gap-2'>
-                <GroupBadge group={group} size='sm' />
-                <span className='rounded bg-blue-500/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-blue-300/90'>
-                  {ratio}x
-                </span>
-              </div>
-              {isTokenBased ? (
-                <div className={cn('grid gap-2 text-[11px]', gridClass)}>
-                  {priceFields.map((field) => (
-                    <div key={field.type}>
-                      <div className='text-muted-foreground text-[9px]'>
-                        {field.label}
-                      </div>
-                      <div className='text-foreground font-mono font-medium tabular-nums'>
-                        {renderGroupPrice(group, field.type)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className='text-foreground font-mono text-xs font-medium tabular-nums'>
-                  {renderFixedGroupPrice(group)}
-                </div>
-              )}
+    <div className='space-y-2'>
+      {availableGroups.map((group) => {
+        const ratio = props.groupRatio[group] || 1
+        return (
+          <div key={group} className='bg-muted/30 rounded-lg px-3 py-2.5'>
+            <div className='mb-2 flex items-center gap-2'>
+              <GroupBadge group={group} size='sm' />
+              <span className='rounded bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-blue-300/90'>
+                {formatRatioLabel(ratio)}
+              </span>
             </div>
-          )
-        })}
-      </div>
-    </details>
+            {isTokenBased ? (
+              <div className={cn('grid gap-2 text-xs', gridClass)}>
+                {priceFields.map((field) => (
+                  <div key={field.type}>
+                    <div className='text-muted-foreground text-[10px]'>
+                      {field.label}
+                    </div>
+                    <div className='text-foreground font-mono font-medium tabular-nums'>
+                      {renderGroupPrice(group, field.type)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className='text-foreground font-mono text-sm font-medium tabular-nums'>
+                {renderFixedGroupPrice(group)}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
@@ -767,12 +714,7 @@ export interface ModelDetailsContentProps {
 }
 
 export function ModelDetailsContent(props: ModelDetailsContentProps) {
-  const { t } = useTranslation()
   const showRechargePrice = props.showRechargePrice ?? false
-
-  const isDynamic =
-    props.model.billing_mode === 'tiered_expr' &&
-    Boolean(props.model.billing_expr)
 
   return (
     <div className='@container/details space-y-4'>
@@ -785,7 +727,6 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
         />
 
         <section className='bg-card/60 space-y-5 rounded-xl border p-4 shadow-sm'>
-          <SectionTitle>{t('Pricing')}</SectionTitle>
           <PriceSection
             model={props.model}
             priceRate={props.priceRate}
@@ -793,9 +734,6 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
             tokenUnit={props.tokenUnit}
             showRechargePrice={showRechargePrice}
           />
-          {isDynamic && (
-            <DynamicPricingBreakdown billingExpr={props.model.billing_expr} />
-          )}
           <GroupPricingSection
             model={props.model}
             groupRatio={props.groupRatio}
