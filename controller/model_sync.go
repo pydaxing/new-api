@@ -951,25 +951,13 @@ func SyncFromChannels(c *gin.Context) {
 				supplierName = upstreamVendorMap[m.VendorID]
 			}
 			if supplierName != "" {
-				if id, ok := vendorIDCache[supplierName]; ok {
-					mi.VendorID = id
-				} else {
-					vendorID := 0
-					var existing model.Vendor
-					if err := model.DB.Where("name = ?", supplierName).First(&existing).Error; err == nil {
-						vendorID = existing.Id
-					} else {
-						v := &model.Vendor{
-							Name:   supplierName,
-							Status: 1,
-						}
-						if err := v.Insert(); err == nil {
-							vendorID = v.Id
-						}
-					}
-					vendorIDCache[supplierName] = vendorID
-					mi.VendorID = vendorID
-				}
+				mi.VendorID = getOrCreateVendorID(supplierName, vendorIDCache)
+			}
+		}
+		// Fallback vendor from scraped data
+		if mi.VendorID == 0 {
+			if scraped, ok := scrapedData[name]; ok && scraped.Vendor != "" {
+				mi.VendorID = getOrCreateVendorID(scraped.Vendor, vendorIDCache)
 			}
 		}
 
@@ -1044,6 +1032,7 @@ func SyncFromChannels(c *gin.Context) {
 
 	// Step 5.5: Update existing models' metadata from scraped data (always overwrite)
 	updatedMetaCount := 0
+	scrapeVendorCache := make(map[string]int)
 	for _, name := range existingNames {
 		scraped, ok := scrapedData[name]
 		if !ok {
@@ -1055,7 +1044,7 @@ func SyncFromChannels(c *gin.Context) {
 		}
 		needUpdate := false
 		if scraped.Tags != "" {
-			local.Tags = string(json.RawMessage(`"` + scraped.Tags + `"`))
+			local.Tags = scraped.Tags
 			needUpdate = true
 		}
 		if scraped.Description != "" {
@@ -1065,6 +1054,13 @@ func SyncFromChannels(c *gin.Context) {
 		if scraped.Endpoints != "" {
 			local.Endpoints = scraped.Endpoints
 			needUpdate = true
+		}
+		if scraped.Vendor != "" {
+			vid := getOrCreateVendorID(scraped.Vendor, scrapeVendorCache)
+			if vid > 0 && local.VendorID != vid {
+				local.VendorID = vid
+				needUpdate = true
+			}
 		}
 		if needUpdate {
 			if err := model.DB.Save(&local).Error; err == nil {
@@ -1245,6 +1241,7 @@ type scrapedModelInfo struct {
 	Endpoints   string
 	InputPrice  float64
 	OutputPrice float64
+	Vendor      string
 }
 
 var htmlCommentRe = regexp.MustCompile(`<!--.*?-->`)
@@ -1314,8 +1311,9 @@ func scrapeModelFromWeb(ctx context.Context, client *http.Client, modelName stri
 	info.Description = scrapeDescription(doc)
 	info.Endpoints = scrapeEndpoints(doc)
 	info.InputPrice, info.OutputPrice = scrapePricing(doc)
+	info.Vendor = scrapeVendor(doc)
 
-	if info.Tags == "" && info.Description == "" && info.Endpoints == "" && info.InputPrice == 0 {
+	if info.Tags == "" && info.Description == "" && info.Endpoints == "" && info.InputPrice == 0 && info.Vendor == "" {
 		return nil
 	}
 	return info
@@ -1422,18 +1420,14 @@ func scrapePricing(doc *goquery.Document) (inputPrice, outputPrice float64) {
 			}
 		})
 
-		for _, r := range rows {
-			if r.name == "default" {
-				inputPrice = r.input
-				outputPrice = r.output
-				return
-			}
-		}
-		for _, r := range rows {
-			if r.name == "gf" {
-				inputPrice = r.input
-				outputPrice = r.output
-				return
+		groupPriority := []string{"default", "gf", "claude_max", "claude", "gemini", "deepseek", "qwen", "sale"}
+		for _, target := range groupPriority {
+			for _, r := range rows {
+				if r.name == target {
+					inputPrice = r.input
+					outputPrice = r.output
+					return
+				}
 			}
 		}
 		if len(rows) > 0 {
@@ -1442,6 +1436,35 @@ func scrapePricing(doc *goquery.Document) (inputPrice, outputPrice float64) {
 		}
 	})
 	return
+}
+
+func getOrCreateVendorID(name string, cache map[string]int) int {
+	if name == "" {
+		return 0
+	}
+	if id, ok := cache[name]; ok {
+		return id
+	}
+	var existing model.Vendor
+	if err := model.DB.Where("name = ?", name).First(&existing).Error; err == nil {
+		cache[name] = existing.Id
+		return existing.Id
+	}
+	v := &model.Vendor{Name: name, Status: 1}
+	if err := v.Insert(); err == nil {
+		cache[name] = v.Id
+		return v.Id
+	}
+	cache[name] = 0
+	return 0
+}
+
+func scrapeVendor(doc *goquery.Document) string {
+	var vendor string
+	doc.Find(`nav[aria-label="breadcrumb"] a[data-slot="breadcrumb-link"]`).First().Each(func(_ int, s *goquery.Selection) {
+		vendor = strings.TrimSpace(s.Text())
+	})
+	return vendor
 }
 
 func cleanPriceText(text string) string {
