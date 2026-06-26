@@ -1042,7 +1042,7 @@ func SyncFromChannels(c *gin.Context) {
 		}
 	}
 
-	// Step 5.5: Update existing models' metadata from scraped data
+	// Step 5.5: Update existing models' metadata from scraped data (always overwrite)
 	updatedMetaCount := 0
 	for _, name := range existingNames {
 		scraped, ok := scrapedData[name]
@@ -1054,15 +1054,15 @@ func SyncFromChannels(c *gin.Context) {
 			continue
 		}
 		needUpdate := false
-		if scraped.Tags != "" && strings.TrimSpace(local.Tags) == "" {
+		if scraped.Tags != "" {
 			local.Tags = string(json.RawMessage(`"` + scraped.Tags + `"`))
 			needUpdate = true
 		}
-		if scraped.Description != "" && strings.TrimSpace(local.Description) == "" {
+		if scraped.Description != "" {
 			local.Description = scraped.Description
 			needUpdate = true
 		}
-		if scraped.Endpoints != "" && strings.TrimSpace(local.Endpoints) == "" {
+		if scraped.Endpoints != "" {
 			local.Endpoints = scraped.Endpoints
 			needUpdate = true
 		}
@@ -1364,6 +1364,8 @@ func scrapeEndpoints(doc *goquery.Document) string {
 			endpointMap["openai"] = path
 		case strings.Contains(path, "/responses"):
 			endpointMap["openai-response"] = path
+		case path == "/v1/messages":
+			endpointMap["anthropic"] = path
 		case strings.Contains(path, "/embeddings"):
 			endpointMap["embeddings"] = path
 		case strings.Contains(path, "/images/generations"):
