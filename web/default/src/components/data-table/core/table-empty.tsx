@@ -71,16 +71,18 @@ export function TableEmpty({
   return (
     <TableRow>
       <TableCell colSpan={colSpan} className='h-[400px] p-0'>
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant='icon'>
-              {icon || <Database className='size-6' />}
-            </EmptyMedia>
-            <EmptyTitle>{resolvedTitle}</EmptyTitle>
-            <EmptyDescription>{resolvedDescription}</EmptyDescription>
-          </EmptyHeader>
-          {children}
-        </Empty>
+        <div className='sticky left-0 flex h-full w-[min(100%,100vw)] items-center justify-center'>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant='icon'>
+                {icon || <Database className='size-6' />}
+              </EmptyMedia>
+              <EmptyTitle>{resolvedTitle}</EmptyTitle>
+              <EmptyDescription>{resolvedDescription}</EmptyDescription>
+            </EmptyHeader>
+            {children}
+          </Empty>
+        </div>
       </TableCell>
     </TableRow>
   )
