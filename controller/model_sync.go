@@ -9,12 +9,16 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/model"
+	"github.com/QuantumNous/new-api/setting/ratio_setting"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -915,6 +919,22 @@ func SyncFromChannels(c *gin.Context) {
 		}
 	}
 
+	// Step 3.5: Scrape model info from gpt.ge for richer metadata
+	scrapedData := scrapeModelsFromWeb(ctx, missingModels)
+	for name, scraped := range scrapedData {
+		existing := pricingMeta[name]
+		if scraped.Tags != "" {
+			existing.Tags = json.RawMessage(`"` + scraped.Tags + `"`)
+		}
+		if scraped.Description != "" {
+			existing.Description = scraped.Description
+		}
+		if scraped.Endpoints != "" {
+			existing.Endpoints = json.RawMessage(scraped.Endpoints)
+		}
+		pricingMeta[name] = existing
+	}
+
 	// Step 4: Create missing models, using pricing metadata when available
 	createdCount := 0
 	skippedCount := 0
@@ -1029,15 +1049,26 @@ func SyncFromChannels(c *gin.Context) {
 		}
 	}
 
+	// Step 6: Persist scraped prices to ratio settings
+	scrapedPricesForPersist := make(map[string]*scrapedModelInfo)
+	for name, sp := range scrapedData {
+		if sp.InputPrice > 0 {
+			scrapedPricesForPersist[name] = sp
+		}
+	}
+	persistScrapedPrices(scrapedPricesForPersist)
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
-			"created_models": createdCount,
-			"filled_models":  filledCount,
-			"skipped_models": skippedCount,
-			"created_list":   createdList,
-			"total_fetched":  len(pricingMeta),
-			"total_local":    len(localModelSet),
+			"created_models":  createdCount,
+			"filled_models":   filledCount,
+			"skipped_models":  skippedCount,
+			"scraped_models":  len(scrapedData),
+			"scraped_prices":  len(scrapedPricesForPersist),
+			"created_list":    createdList,
+			"total_fetched":   len(pricingMeta),
+			"total_local":     len(localModelSet),
 		},
 	})
 }
@@ -1177,4 +1208,237 @@ func SyncUpstreamPreview(c *gin.Context) {
 			},
 		},
 	})
+}
+
+// --- Web scraping from gpt.ge ---
+
+const scrapeBaseURL = "https://gpt.ge/models/"
+
+type scrapedModelInfo struct {
+	Tags        string
+	Description string
+	Endpoints   string
+	InputPrice  float64
+	OutputPrice float64
+}
+
+var htmlCommentRe = regexp.MustCompile(`<!--.*?-->`)
+
+func scrapeModelsFromWeb(ctx context.Context, modelNames []string) map[string]*scrapedModelInfo {
+	results := make(map[string]*scrapedModelInfo)
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	sem := make(chan struct{}, 5)
+	client := &http.Client{Timeout: 8 * time.Second}
+
+	for _, name := range modelNames {
+		wg.Add(1)
+		go func(modelName string) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			info := scrapeModelFromWeb(ctx, client, modelName)
+			if info != nil {
+				mu.Lock()
+				results[modelName] = info
+				mu.Unlock()
+			}
+		}(name)
+	}
+	wg.Wait()
+	return results
+}
+
+func scrapeModelFromWeb(ctx context.Context, client *http.Client, modelName string) *scrapedModelInfo {
+	url := scrapeBaseURL + modelName
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; NewAPI/1.0)")
+
+	resp, err := client.Do(req)
+	if err != nil || resp.StatusCode != 200 {
+		if resp != nil {
+			resp.Body.Close()
+		}
+		return nil
+	}
+	defer resp.Body.Close()
+
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return nil
+	}
+
+	info := &scrapedModelInfo{}
+	info.Tags = scrapeTags(doc)
+	info.Description = scrapeDescription(doc)
+	info.Endpoints = scrapeEndpoints(doc)
+	info.InputPrice, info.OutputPrice = scrapePricing(doc)
+
+	if info.Tags == "" && info.Description == "" && info.Endpoints == "" && info.InputPrice == 0 {
+		return nil
+	}
+	return info
+}
+
+func scrapeTags(doc *goquery.Document) string {
+	var tags []string
+	doc.Find(`span[data-slot="badge"][data-variant="outline"]`).Each(func(_ int, s *goquery.Selection) {
+		text := strings.TrimSpace(s.Text())
+		if text != "" && text != "POST" && text != "GET" {
+			tags = append(tags, text)
+		}
+	})
+	return strings.Join(tags, ",")
+}
+
+func scrapeDescription(doc *goquery.Document) string {
+	var desc string
+	doc.Find(`div[id^="S:"]`).Each(func(_ int, s *goquery.Selection) {
+		prose := s.Find(`div.prose`)
+		if prose.Length() > 0 && desc == "" {
+			desc = strings.TrimSpace(prose.Text())
+		}
+	})
+	if desc != "" {
+		return desc
+	}
+	doc.Find("h2").Each(func(_ int, s *goquery.Selection) {
+		if strings.Contains(s.Text(), "模型描述") && desc == "" {
+			parent := s.Parent()
+			desc = strings.TrimSpace(parent.Find("p").First().Text())
+		}
+	})
+	return desc
+}
+
+func scrapeEndpoints(doc *goquery.Document) string {
+	endpointMap := make(map[string]interface{})
+	doc.Find("code").Each(func(_ int, s *goquery.Selection) {
+		path := strings.TrimSpace(s.Text())
+		if !strings.HasPrefix(path, "/v1/") {
+			return
+		}
+		switch {
+		case strings.Contains(path, "/chat/completions"):
+			endpointMap["openai"] = path
+		case strings.Contains(path, "/responses"):
+			endpointMap["openai-response"] = path
+		case strings.Contains(path, "/embeddings"):
+			endpointMap["embeddings"] = path
+		case strings.Contains(path, "/images/generations"):
+			endpointMap["image-generation"] = path
+		case strings.Contains(path, "/images/edits"):
+			endpointMap["image-edit"] = path
+		case strings.Contains(path, "/audio/speech"):
+			endpointMap["audio-speech"] = path
+		case strings.Contains(path, "/audio/transcriptions"):
+			endpointMap["audio-transcription"] = path
+		default:
+			key := strings.TrimPrefix(path, "/v1/")
+			key = strings.ReplaceAll(key, "/", "-")
+			endpointMap[key] = path
+		}
+	})
+	if len(endpointMap) == 0 {
+		return ""
+	}
+	buf, _ := common.Marshal(endpointMap)
+	return string(buf)
+}
+
+func scrapePricing(doc *goquery.Document) (inputPrice, outputPrice float64) {
+	doc.Find("table").Each(func(_ int, table *goquery.Selection) {
+		headerRow := table.Find("thead tr").First()
+		if !strings.Contains(headerRow.Text(), "令牌分组") {
+			return
+		}
+		if inputPrice > 0 {
+			return
+		}
+
+		type groupRow struct {
+			name   string
+			input  float64
+			output float64
+		}
+		var rows []groupRow
+
+		table.Find("tbody tr").Each(func(_ int, tr *goquery.Selection) {
+			cells := tr.Find("td")
+			if cells.Length() < 5 {
+				return
+			}
+			name := strings.TrimSpace(cells.Eq(0).Text())
+			inputText := cleanPriceText(cells.Eq(3).Text())
+			outputText := cleanPriceText(cells.Eq(4).Text())
+
+			inPrice := parsePrice(inputText)
+			outPrice := parsePrice(outputText)
+			if inPrice > 0 {
+				rows = append(rows, groupRow{name: name, input: inPrice, output: outPrice})
+			}
+		})
+
+		for _, r := range rows {
+			if r.name == "default" {
+				inputPrice = r.input
+				outputPrice = r.output
+				return
+			}
+		}
+		for _, r := range rows {
+			if r.name == "gf" {
+				inputPrice = r.input
+				outputPrice = r.output
+				return
+			}
+		}
+		if len(rows) > 0 {
+			inputPrice = rows[0].input
+			outputPrice = rows[0].output
+		}
+	})
+	return
+}
+
+func cleanPriceText(text string) string {
+	text = htmlCommentRe.ReplaceAllString(text, "")
+	text = strings.ReplaceAll(text, " ", "")
+	text = strings.TrimSpace(text)
+	return text
+}
+
+func parsePrice(text string) float64 {
+	text = strings.TrimPrefix(text, "$")
+	text = strings.TrimSuffix(text, "/M")
+	text = strings.TrimSpace(text)
+	val, err := strconv.ParseFloat(text, 64)
+	if err != nil {
+		return 0
+	}
+	return val
+}
+
+func persistScrapedPrices(scrapedPrices map[string]*scrapedModelInfo) {
+	if len(scrapedPrices) == 0 {
+		return
+	}
+	for name, sp := range scrapedPrices {
+		if sp.InputPrice <= 0 {
+			continue
+		}
+		modelRatio := sp.InputPrice / 2.0
+		ratio_setting.SetModelRatio(name, modelRatio)
+		if sp.OutputPrice > 0 && sp.InputPrice > 0 {
+			completionRatio := sp.OutputPrice / sp.InputPrice
+			ratio_setting.SetCompletionRatio(name, completionRatio)
+		}
+	}
+	_ = model.UpdateOption("ModelRatio", ratio_setting.ModelRatio2JSONString())
+	_ = model.UpdateOption("CompletionRatio", ratio_setting.CompletionRatio2JSONString())
 }

@@ -647,6 +647,14 @@ func ModelRatio2JSONString() string {
 	return modelRatioMap.MarshalJSONString()
 }
 
+func SetModelRatio(name string, ratio float64) {
+	modelRatioMap.Set(name, ratio)
+}
+
+func SetCompletionRatio(name string, ratio float64) {
+	completionRatioMap.Set(name, ratio)
+}
+
 var defaultImageRatio = map[string]float64{
 	"gpt-image-1": 2,
 }
