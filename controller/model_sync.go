@@ -868,19 +868,6 @@ func SyncFromChannels(c *gin.Context) {
 		}
 	}
 
-	if len(missingModels) == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"data": gin.H{
-				"created_models": 0,
-				"total_fetched":  0,
-				"total_local":    len(localModelSet),
-				"message":        "所有模型已存在，无需导入",
-			},
-		})
-		return
-	}
-
 	// Step 3: Fetch pricing from channels to get metadata for missing models
 	timeoutSec := common.GetEnvOrDefault("SYNC_HTTP_TIMEOUT_SECONDS", 15)
 	ctx, cancel := context.WithTimeout(c.Request.Context(), time.Duration(timeoutSec)*time.Second)
@@ -919,8 +906,14 @@ func SyncFromChannels(c *gin.Context) {
 		}
 	}
 
-	// Step 3.5: Scrape model info from gpt.ge for richer metadata
-	scrapedData := scrapeModelsFromWeb(ctx, missingModels)
+	// Step 3.5: Scrape model info from gpt.ge for ALL local models (not just missing)
+	scrapeTimeout := time.Duration(len(localModels)*2+30) * time.Second
+	if scrapeTimeout > 10*time.Minute {
+		scrapeTimeout = 10 * time.Minute
+	}
+	scrapeCtx, scrapeCancel := context.WithTimeout(c.Request.Context(), scrapeTimeout)
+	defer scrapeCancel()
+	scrapedData := scrapeModelsFromWeb(scrapeCtx, localModels)
 	for name, scraped := range scrapedData {
 		existing := pricingMeta[name]
 		if scraped.Tags != "" {
@@ -1049,7 +1042,38 @@ func SyncFromChannels(c *gin.Context) {
 		}
 	}
 
-	// Step 6: Persist scraped prices to ratio settings
+	// Step 5.5: Update existing models' metadata from scraped data
+	updatedMetaCount := 0
+	for _, name := range existingNames {
+		scraped, ok := scrapedData[name]
+		if !ok {
+			continue
+		}
+		var local model.Model
+		if err := model.DB.Where("model_name = ?", name).First(&local).Error; err != nil {
+			continue
+		}
+		needUpdate := false
+		if scraped.Tags != "" && strings.TrimSpace(local.Tags) == "" {
+			local.Tags = string(json.RawMessage(`"` + scraped.Tags + `"`))
+			needUpdate = true
+		}
+		if scraped.Description != "" && strings.TrimSpace(local.Description) == "" {
+			local.Description = scraped.Description
+			needUpdate = true
+		}
+		if scraped.Endpoints != "" && strings.TrimSpace(local.Endpoints) == "" {
+			local.Endpoints = scraped.Endpoints
+			needUpdate = true
+		}
+		if needUpdate {
+			if err := model.DB.Save(&local).Error; err == nil {
+				updatedMetaCount++
+			}
+		}
+	}
+
+	// Step 6: Persist scraped prices to ratio settings (for ALL scraped models)
 	scrapedPricesForPersist := make(map[string]*scrapedModelInfo)
 	for name, sp := range scrapedData {
 		if sp.InputPrice > 0 {
@@ -1063,6 +1087,7 @@ func SyncFromChannels(c *gin.Context) {
 		"data": gin.H{
 			"created_models":  createdCount,
 			"filled_models":   filledCount,
+			"updated_meta":    updatedMetaCount,
 			"skipped_models":  skippedCount,
 			"scraped_models":  len(scrapedData),
 			"scraped_prices":  len(scrapedPricesForPersist),
@@ -1229,10 +1254,21 @@ func scrapeModelsFromWeb(ctx context.Context, modelNames []string) map[string]*s
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	sem := make(chan struct{}, 5)
-	client := &http.Client{Timeout: 8 * time.Second}
+	sem := make(chan struct{}, 10)
+	rateLimiter := time.NewTicker(600 * time.Millisecond) // 100 requests per minute
+	defer rateLimiter.Stop()
+	client := &http.Client{Timeout: 10 * time.Second}
 
 	for _, name := range modelNames {
+		select {
+		case <-ctx.Done():
+			break
+		case <-rateLimiter.C:
+		}
+		if ctx.Err() != nil {
+			break
+		}
+
 		wg.Add(1)
 		go func(modelName string) {
 			defer wg.Done()
