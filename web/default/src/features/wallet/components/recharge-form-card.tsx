@@ -217,7 +217,7 @@ export function RechargeFormCard({
                   <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
                     {t('Amount')}
                   </Label>
-                  <div className='grid grid-cols-2 gap-1.5 sm:gap-3 md:grid-cols-4'>
+                  <div className='grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3'>
                     {presetAmounts.map((preset, index) => {
                       const discount =
                         preset.discount ||
@@ -239,27 +239,27 @@ export function RechargeFormCard({
                           key={index}
                           variant='outline'
                           className={cn(
-                            'relative flex min-h-16 flex-col items-start overflow-hidden rounded-lg px-3 py-2.5 text-left whitespace-normal sm:min-h-[72px] sm:p-4',
+                            'flex min-h-[88px] flex-col items-start justify-between rounded-lg px-3 py-3 text-left whitespace-normal sm:px-4 sm:py-3.5',
                             selectedPreset === preset.value
                               ? 'border-foreground bg-foreground/5 dark:border-foreground dark:bg-foreground/10'
                               : 'border-muted'
                           )}
                           onClick={() => onSelectPreset(preset)}
                         >
-                          {hasDiscount && (
-                            <div className='pointer-events-none absolute -right-[18px] -top-[18px] size-12'>
-                              <div className='absolute bottom-[6px] left-0 w-full rotate-45 bg-green-500 py-0.5 text-center text-[10px] font-bold text-white shadow-sm'>
-                                {getDiscountLabel(discount)}
-                              </div>
+                          <div className='flex w-full items-center justify-between'>
+                            <div className='font-mono text-lg font-bold sm:text-xl'>
+                              ${formatNumber(displayValue)}
                             </div>
-                          )}
-                          <div className='text-base font-semibold sm:text-lg'>
-                            ${formatNumber(displayValue)}
+                            {hasDiscount && (
+                              <span className='rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-600 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-300'>
+                                {getDiscountLabel(discount)}
+                              </span>
+                            )}
                           </div>
-                          <div className='text-muted-foreground mt-1.5 w-full text-xs sm:mt-2'>
-                            {t('实付')} ￥{formatCurrency(actualPrice)}
+                          <div className='text-muted-foreground mt-2 flex w-full flex-col gap-0.5 text-xs'>
+                            <span>{t('实付')} ￥{formatCurrency(actualPrice)}</span>
                             {hasDiscount && savedAmount > 0 && (
-                              <span className='ml-1.5 text-green-600'>
+                              <span className='font-medium text-green-600'>
                                 {t('省')} ￥{formatCurrency(savedAmount)}
                               </span>
                             )}

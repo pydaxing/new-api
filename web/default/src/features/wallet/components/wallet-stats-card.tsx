@@ -68,9 +68,9 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
       icon: Activity,
     },
     {
-      label: t('Exchange Rate'),
+      label: t('当前汇率'),
       value: `1$ = ￥${priceRatio}`,
-      description: t('USD to CNY'),
+      description: t('美元兑人民币'),
       icon: ArrowLeftRight,
     },
   ]
