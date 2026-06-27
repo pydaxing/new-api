@@ -81,8 +81,8 @@ export function DocsContent({ slug }: DocsContentProps) {
 
   return (
     <main className='min-w-0 flex-1 px-6 py-8 md:px-12'>
-      <article className='max-w-3xl'>
-        <Markdown>{content}</Markdown>
+      <article className='docs-prose max-w-3xl'>
+        <Markdown className='docs-prose'>{content}</Markdown>
       </article>
     </main>
   )
