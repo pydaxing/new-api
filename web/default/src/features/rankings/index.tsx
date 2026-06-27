@@ -87,29 +87,30 @@ export function Rankings() {
             />
           ) : (
             <>
-              <PodiumCard
-                title={t('Top Models')}
-                items={snapshot.models.slice(0, 3).map((m) => ({
-                  name: m.model_name,
-                  icon: getLobeIcon(m.vendor_icon, 36),
-                  value: formatTokens(m.total_tokens),
-                  subtitle: m.vendor,
-                }))}
-              />
+              <div className='grid grid-cols-1 gap-4 lg:grid-cols-2 sm:gap-6'>
+                <PodiumCard
+                  title={t('Trending Models')}
+                  items={snapshot.models.slice(0, 3).map((m) => ({
+                    name: m.model_name,
+                    icon: getLobeIcon(m.vendor_icon, 32),
+                    value: formatTokens(m.total_tokens),
+                    subtitle: m.vendor,
+                  }))}
+                />
+                <PodiumCard
+                  title={t('Trending Vendors')}
+                  items={snapshot.vendors.slice(0, 3).map((v) => ({
+                    name: v.vendor,
+                    icon: getLobeIcon(v.vendor_icon, 32),
+                    value: formatTokens(v.total_tokens),
+                    subtitle: `${v.models_count} ${t('models')}`,
+                  }))}
+                />
+              </div>
 
               <ModelLeaderboard
                 rows={snapshot.models}
                 totalTokens={snapshot.models.reduce((s, r) => s + r.total_tokens, 0)}
-              />
-
-              <PodiumCard
-                title={t('Top Vendors')}
-                items={snapshot.vendors.slice(0, 3).map((v) => ({
-                  name: v.vendor,
-                  icon: getLobeIcon(v.vendor_icon, 36),
-                  value: formatTokens(v.total_tokens),
-                  subtitle: `${v.models_count} ${t('models')}`,
-                }))}
               />
             </>
           )}
