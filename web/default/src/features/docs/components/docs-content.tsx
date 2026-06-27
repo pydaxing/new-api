@@ -41,7 +41,7 @@ export function DocsContent({ slug }: DocsContentProps) {
     setLoading(true)
     setError(null)
 
-    fetch(`/docs/${doc.item.file}`)
+    fetch(`/api-docs/${doc.item.file}`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         return res.text()
