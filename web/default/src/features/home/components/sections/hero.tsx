@@ -184,26 +184,20 @@ export function Hero(props: HeroProps) {
             </div>
             <div className='flex flex-wrap items-center gap-3'>
               {/* OpenClaw */}
-              <a
-                href='https://openclaw.com'
-                target='_blank'
-                rel='noopener noreferrer'
-                className='group border-border/40 bg-muted/15 text-foreground/80 hover:border-border hover:bg-muted/30 hover:text-foreground flex items-center gap-3 rounded-full border px-5 py-2.5 text-sm font-medium shadow-[0_1px_2.5px_rgba(0,0,0,0.01)] backdrop-blur-xs transition-all duration-300 hover:scale-[1.02]'
+              <div
+                className='border-border/40 bg-muted/15 text-foreground/80 flex items-center gap-3 rounded-full border px-5 py-2.5 text-sm font-medium shadow-[0_1px_2.5px_rgba(0,0,0,0.01)] backdrop-blur-xs'
               >
                 <OpenClaw.Color size={24} className='shrink-0' />
                 <span>OpenClaw</span>
-              </a>
+              </div>
 
               {/* Claude Code */}
-              <a
-                href='https://claude.ai/code'
-                target='_blank'
-                rel='noopener noreferrer'
-                className='group border-border/40 bg-muted/15 text-foreground/80 hover:border-border hover:bg-muted/30 hover:text-foreground flex items-center gap-3 rounded-full border px-5 py-2.5 text-sm font-medium shadow-[0_1px_2.5px_rgba(0,0,0,0.01)] backdrop-blur-xs transition-all duration-300 hover:scale-[1.02]'
+              <div
+                className='border-border/40 bg-muted/15 text-foreground/80 flex items-center gap-3 rounded-full border px-5 py-2.5 text-sm font-medium shadow-[0_1px_2.5px_rgba(0,0,0,0.01)] backdrop-blur-xs'
               >
                 <ClaudeCode.Color size={24} className='shrink-0' />
                 <span>Claude Code</span>
-              </a>
+              </div>
 
               {/* "更多" */}
               <div className='group border-border/40 bg-muted/15 text-foreground/55 hover:border-border hover:bg-muted/30 hover:text-foreground flex cursor-default items-center gap-2.5 rounded-full border px-5 py-2.5 text-sm font-medium shadow-[0_1px_2.5px_rgba(0,0,0,0.01)] backdrop-blur-xs transition-all duration-300 hover:scale-[1.02]'>
