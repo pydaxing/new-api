@@ -30,6 +30,42 @@ const (
 	upstreamVendorsURL = "https://basellm.github.io/llm-metadata/api/newapi/vendors.json"
 )
 
+var vendorIconKeyMap = map[string]string{
+	"通义千问":   "Qwen",
+	"深度求索":   "DeepSeek",
+	"智谱AI":    "Zhipu",
+	"智谱":     "Zhipu",
+	"百川智能":   "Baichuan",
+	"百度":     "Baidu",
+	"文心一言":   "Wenxin",
+	"月之暗面":   "Moonshot",
+	"零一万物":   "ZeroOne",
+	"阶跃星辰":   "Stepfun",
+	"商汤":     "SenseNova",
+	"科大讯飞":   "Spark",
+	"腾讯":     "Tencent",
+	"混元":     "Hunyuan",
+	"字节跳动":   "ByteDance",
+	"豆包":     "Doubao",
+	"昆仑万维":   "Skywork",
+	"MiniMax":  "Minimax",
+	"Minimax":  "Minimax",
+	"OpenAI":   "OpenAI",
+	"Anthropic": "Anthropic",
+	"Google":   "Google",
+	"Meta":     "Meta",
+	"Mistral":  "Mistral",
+	"Cohere":   "Cohere",
+	"xAI":      "XAI",
+}
+
+func vendorToIconKey(vendor string) string {
+	if key, ok := vendorIconKeyMap[vendor]; ok {
+		return key
+	}
+	return vendor
+}
+
 func normalizeLocale(locale string) (string, bool) {
 	l := strings.ToLower(strings.TrimSpace(locale))
 	switch l {
@@ -960,7 +996,7 @@ func SyncFromChannels(c *gin.Context) {
 				mi.VendorID = getOrCreateVendorID(scraped.Vendor, vendorIDCache)
 			}
 			if mi.Icon == "" {
-				mi.Icon = scraped.Vendor + ".Color"
+				mi.Icon = vendorToIconKey(scraped.Vendor) + ".Color"
 			}
 		}
 
@@ -1064,7 +1100,7 @@ func SyncFromChannels(c *gin.Context) {
 				local.VendorID = vid
 				needUpdate = true
 			}
-			icon := scraped.Vendor + ".Color"
+			icon := vendorToIconKey(scraped.Vendor) + ".Color"
 			if local.Icon != icon {
 				local.Icon = icon
 				needUpdate = true
@@ -1455,10 +1491,14 @@ func getOrCreateVendorID(name string, cache map[string]int) int {
 	}
 	var existing model.Vendor
 	if err := model.DB.Where("name = ?", name).First(&existing).Error; err == nil {
+		if existing.Icon == "" {
+			icon := vendorToIconKey(name) + ".Color"
+			model.DB.Model(&existing).Update("icon", icon)
+		}
 		cache[name] = existing.Id
 		return existing.Id
 	}
-	v := &model.Vendor{Name: name, Status: 1}
+	v := &model.Vendor{Name: name, Status: 1, Icon: vendorToIconKey(name) + ".Color"}
 	if err := v.Insert(); err == nil {
 		cache[name] = v.Id
 		return v.Id
