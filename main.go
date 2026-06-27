@@ -310,6 +310,9 @@ func InitResources() error {
 
 	perfmetrics.Init()
 
+	// Initialize OSS
+	common.InitOSS()
+
 	// 启动系统监控
 	common.StartSystemMonitor()
 

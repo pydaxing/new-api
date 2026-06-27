@@ -16,11 +16,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { LayoutDashboard } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
+import { useStatus } from '@/hooks/use-status'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import {
@@ -52,6 +53,17 @@ export function SidebarModulesCard() {
   const [config, setConfig] = useState<SidebarModulesConfig>({})
   const currentUser = useAuthStore((s) => s.auth.user)
   const setUser = useAuthStore((s) => s.auth.setUser)
+  const { status } = useStatus()
+
+  const adminConfig = useMemo(() => {
+    const raw = status?.SidebarModulesAdmin as string | undefined
+    if (!raw) return null
+    try {
+      return JSON.parse(raw) as Record<string, Record<string, boolean>>
+    } catch {
+      return null
+    }
+  }, [status?.SidebarModulesAdmin])
 
   const sectionDefs: SectionDef[] = [
     {
@@ -121,6 +133,19 @@ export function SidebarModulesCard() {
       ],
     },
   ]
+
+  const filteredSections = useMemo(() => {
+    if (!adminConfig) return sectionDefs
+    return sectionDefs
+      .filter((section) => adminConfig[section.key]?.enabled !== false)
+      .map((section) => ({
+        ...section,
+        modules: section.modules.filter(
+          (mod) => adminConfig[section.key]?.[mod.key] !== false
+        ),
+      }))
+      .filter((section) => section.modules.length > 0)
+  }, [adminConfig])
 
   const loadConfig = useCallback(async () => {
     try {
@@ -217,7 +242,7 @@ export function SidebarModulesCard() {
         </div>
       </CardHeader>
       <CardContent className='space-y-4 p-3 sm:space-y-5 sm:p-5'>
-        {sectionDefs.map((section) => {
+        {filteredSections.map((section) => {
           const sectionEnabled = config[section.key]?.enabled !== false
           return (
             <div

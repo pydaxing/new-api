@@ -65,6 +65,8 @@ export interface UserProfile {
   aff_history_quota: number
   /** Invite user ID */
   invite_user_id?: number
+  /** Avatar URL */
+  avatar_url?: string
   /** Account creation timestamp */
   created_time: number
   /** User settings (JSON string) */

@@ -16,12 +16,15 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Activity, BarChart3, WalletCards } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Activity, BarChart3, Camera, Loader2, WalletCards } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { getUserAvatarFallback, getUserAvatarStyle } from '@/lib/avatar'
+import { api } from '@/lib/api'
 import { formatCompactNumber, formatQuota } from '@/lib/format'
 import { getRoleLabel } from '@/lib/roles'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatusBadge } from '@/components/status-badge'
@@ -35,10 +38,43 @@ import type { UserProfile } from '../types'
 interface ProfileHeaderProps {
   profile: UserProfile | null
   loading: boolean
+  onProfileUpdate?: () => void
 }
 
-export function ProfileHeader({ profile, loading }: ProfileHeaderProps) {
+export function ProfileHeader({ profile, loading, onProfileUpdate }: ProfileHeaderProps) {
   const { t } = useTranslation()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error(t('File size cannot exceed 2MB'))
+      return
+    }
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await api.post('/api/user/avatar', formData)
+      if (res.data.success) {
+        toast.success(t('Avatar updated'))
+        onProfileUpdate?.()
+      } else {
+        toast.error(res.data.message || t('Upload failed'))
+      }
+    } catch {
+      toast.error(t('Upload failed'))
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   if (loading) {
     return (
@@ -106,14 +142,42 @@ export function ProfileHeader({ profile, loading }: ProfileHeaderProps) {
     <Card data-card-hover='false' className='gap-0 overflow-hidden py-0'>
       <CardContent className='p-3 sm:p-5'>
         <div className='flex items-center gap-3 text-left sm:gap-4'>
-          <Avatar className='ring-background h-12 w-12 rounded-xl text-sm ring-2 sm:h-16 sm:w-16 sm:rounded-2xl sm:text-lg sm:ring-4'>
-            <AvatarFallback
-              className='rounded-xl font-semibold text-white sm:rounded-2xl'
-              style={avatarFallbackStyle}
-            >
-              {avatarFallback}
-            </AvatarFallback>
-          </Avatar>
+          <button
+            type='button'
+            onClick={handleAvatarClick}
+            className='group relative cursor-pointer'
+            disabled={uploading}
+          >
+            <Avatar className='ring-background h-12 w-12 rounded-xl text-sm ring-2 sm:h-16 sm:w-16 sm:rounded-2xl sm:text-lg sm:ring-4'>
+              {profile.avatar_url && (
+                <AvatarImage
+                  src={profile.avatar_url}
+                  alt={displayName}
+                  className='rounded-xl object-cover sm:rounded-2xl'
+                />
+              )}
+              <AvatarFallback
+                className='rounded-xl font-semibold text-white sm:rounded-2xl'
+                style={avatarFallbackStyle}
+              >
+                {avatarFallback}
+              </AvatarFallback>
+            </Avatar>
+            <div className='absolute inset-0 flex items-center justify-center rounded-xl bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 sm:rounded-2xl'>
+              {uploading ? (
+                <Loader2 className='h-5 w-5 animate-spin text-white' />
+              ) : (
+                <Camera className='h-5 w-5 text-white' />
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type='file'
+              accept='image/jpeg,image/png,image/webp'
+              className='hidden'
+              onChange={handleFileChange}
+            />
+          </button>
 
           <div className='min-w-0 flex-1 space-y-1.5 sm:space-y-3'>
             <div className='flex min-w-0 items-center gap-2'>
@@ -124,11 +188,6 @@ export function ProfileHeader({ profile, loading }: ProfileHeaderProps) {
                 label={roleLabel}
                 variant='neutral'
                 copyable={false}
-              />
-              <StatusBadge
-                label={`${t('User ID')} ${profile.id}`}
-                variant='info'
-                copyText={String(profile.id)}
               />
             </div>
 
