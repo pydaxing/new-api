@@ -262,11 +262,16 @@ func modelMeta(modelName string, meta map[string]rankingModelMeta) rankingModelM
 
 func buildRankedModels(totals []model.RankingQuotaTotal, totalTokens int64, previousRanks map[string]int, previousTokens map[string]int64, meta map[string]rankingModelMeta, showGrowth bool) []RankedModel {
 	rows := make([]RankedModel, 0, len(totals))
-	for idx, item := range totals {
-		modelMeta := modelMeta(item.ModelName, meta)
+	rank := 0
+	for _, item := range totals {
+		mm := modelMeta(item.ModelName, meta)
+		if mm.vendor == rankingUnknownVendor {
+			continue
+		}
+		rank++
 		var previousRank *int
-		if rank, ok := previousRanks[item.ModelName]; ok {
-			rankCopy := rank
+		if r, ok := previousRanks[item.ModelName]; ok {
+			rankCopy := r
 			previousRank = &rankCopy
 		}
 		growth := 0.0
@@ -274,11 +279,11 @@ func buildRankedModels(totals []model.RankingQuotaTotal, totalTokens int64, prev
 			growth = rankingGrowthPct(item.TotalTokens, previousTokens[item.ModelName])
 		}
 		rows = append(rows, RankedModel{
-			Rank:         idx + 1,
+			Rank:         rank,
 			PreviousRank: previousRank,
 			ModelName:    item.ModelName,
-			Vendor:       modelMeta.vendor,
-			VendorIcon:   modelMeta.vendorIcon,
+			Vendor:       mm.vendor,
+			VendorIcon:   mm.vendorIcon,
 			Category:     "all",
 			TotalTokens:  item.TotalTokens,
 			Share:        rankingShare(item.TotalTokens, totalTokens),

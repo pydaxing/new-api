@@ -30,6 +30,8 @@ type ModelLeaderboardProps = {
   variant?: 'default' | 'compact'
   /** Optional cap (rows beyond this are dropped). */
   limit?: number
+  /** Total tokens to display in the card header. */
+  totalTokens?: number
 }
 
 /**
@@ -42,6 +44,7 @@ type ModelLeaderboardProps = {
  * `/pricing/{modelName}` and vendor jumps to `/pricing?vendor={vendor}`.
  */
 export function ModelLeaderboard(props: ModelLeaderboardProps) {
+  const { t } = useTranslation()
   const limited = props.limit ? props.rows.slice(0, props.limit) : props.rows
   const half = Math.ceil(limited.length / 2)
   const left = limited.slice(0, half)
@@ -53,9 +56,26 @@ export function ModelLeaderboard(props: ModelLeaderboardProps) {
   }
 
   return (
-    <div className='grid grid-cols-1 gap-x-8 md:grid-cols-2'>
-      <ModelList rows={left} variant={variant} />
-      {right.length > 0 && <ModelList rows={right} variant={variant} />}
+    <div className='bg-card overflow-hidden rounded-xl border'>
+      <div className='flex items-center justify-between border-b px-4 py-3 sm:px-5 sm:py-4'>
+        <h3 className='text-foreground text-sm font-semibold'>
+          {t('LLM Leaderboard')}
+        </h3>
+        {props.totalTokens != null && props.totalTokens > 0 && (
+          <div className='text-right'>
+            <span className='text-foreground font-mono text-lg font-bold tabular-nums sm:text-xl'>
+              {formatTokens(props.totalTokens)}
+            </span>
+            <span className='text-muted-foreground ml-1 text-xs'>{t('tokens')}</span>
+          </div>
+        )}
+      </div>
+      <div className='p-4 sm:p-5'>
+        <div className='grid grid-cols-1 gap-x-8 md:grid-cols-2'>
+          <ModelList rows={left} variant={variant} />
+          {right.length > 0 && <ModelList rows={right} variant={variant} />}
+        </div>
+      </div>
     </div>
   )
 }

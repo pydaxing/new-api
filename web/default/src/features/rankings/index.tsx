@@ -18,15 +18,16 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
+import { getLobeIcon } from '@/lib/lobe-icon'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PublicLayout } from '@/components/layout'
 import { PageTransition } from '@/components/page-transition'
 import {
-  MarketShareSection,
-  ModelsSection,
-  PulseSection,
+  ModelLeaderboard,
+  PodiumCard,
   RankingsHero,
 } from './components'
+import { formatTokens } from './lib/format'
 import { useRankings } from './hooks/use-rankings'
 import type { RankingPeriod } from './types'
 
@@ -86,21 +87,29 @@ export function Rankings() {
             />
           ) : (
             <>
-              <ModelsSection
-                history={snapshot.models_history}
+              <PodiumCard
+                title={t('Top Models')}
+                items={snapshot.models.slice(0, 3).map((m) => ({
+                  name: m.model_name,
+                  icon: getLobeIcon(m.vendor_icon, 36),
+                  value: formatTokens(m.total_tokens),
+                  subtitle: m.vendor,
+                }))}
+              />
+
+              <ModelLeaderboard
                 rows={snapshot.models}
-                period={period}
+                totalTokens={snapshot.models.reduce((s, r) => s + r.total_tokens, 0)}
               />
 
-              <MarketShareSection
-                history={snapshot.vendor_share_history}
-                rows={snapshot.vendors}
-                period={period}
-              />
-
-              <PulseSection
-                movers={snapshot.top_movers}
-                droppers={snapshot.top_droppers}
+              <PodiumCard
+                title={t('Top Vendors')}
+                items={snapshot.vendors.slice(0, 3).map((v) => ({
+                  name: v.vendor,
+                  icon: getLobeIcon(v.vendor_icon, 36),
+                  value: formatTokens(v.total_tokens),
+                  subtitle: `${v.models_count} ${t('models')}`,
+                }))}
               />
             </>
           )}
