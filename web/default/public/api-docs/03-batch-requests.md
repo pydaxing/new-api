@@ -2,12 +2,11 @@
 
 有些用户不知道如何进行大批量的快速请求API。提供一个简单的python示例
 
-> **提示**
-python的httpx请求效率远不如aiohttp，建议使用aiohttp进行并发请求。
+> **提示** python的httpx请求效率远不如aiohttp，建议使用aiohttp进行并发请求。
 
 ### 安装依赖
 
-```sh
+```bash
 pip install asyncio
 pip install aiohttp
 ```

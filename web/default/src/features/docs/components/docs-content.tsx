@@ -16,7 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
+import { codeToHtml } from 'shiki/bundle/web'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Markdown } from '@/components/ui/markdown'
 import { findDocBySlug } from '../content'
@@ -25,10 +26,49 @@ type DocsContentProps = {
   slug: string
 }
 
+function useShikiHighlight(containerRef: React.RefObject<HTMLElement | null>, content: string) {
+  useEffect(() => {
+    if (!containerRef.current || !content) return
+
+    const codeBlocks = containerRef.current.querySelectorAll('pre > code')
+    if (!codeBlocks.length) return
+
+    let cancelled = false
+
+    const highlight = async () => {
+      for (const block of codeBlocks) {
+        if (cancelled) break
+        const pre = block.parentElement
+        if (!pre || pre.dataset.highlighted === 'true') continue
+
+        const langClass = Array.from(block.classList).find((c) => c.startsWith('language-'))
+        const lang = langClass?.replace('language-', '') || 'text'
+        const code = block.textContent || ''
+
+        try {
+          const html = await codeToHtml(code, {
+            lang: lang as any,
+            themes: { light: 'one-light', dark: 'one-dark-pro' },
+          })
+          if (!cancelled) {
+            pre.outerHTML = html
+          }
+        } catch {
+          // fallback: keep as plain text
+        }
+      }
+    }
+
+    highlight()
+    return () => { cancelled = true }
+  }, [containerRef, content])
+}
+
 export function DocsContent({ slug }: DocsContentProps) {
   const [content, setContent] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const articleRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     const doc = findDocBySlug(slug)
@@ -56,6 +96,16 @@ export function DocsContent({ slug }: DocsContentProps) {
       })
   }, [slug])
 
+  useShikiHighlight(articleRef, content)
+
+  const scrollToTop = useCallback(() => {
+    articleRef.current?.scrollTo({ top: 0 })
+  }, [])
+
+  useEffect(() => {
+    scrollToTop()
+  }, [slug, scrollToTop])
+
   if (error) {
     return (
       <main className='flex-1 px-6 py-8 md:px-12'>
@@ -80,7 +130,7 @@ export function DocsContent({ slug }: DocsContentProps) {
   }
 
   return (
-    <main className='min-w-0 flex-1 px-6 py-8 md:px-12'>
+    <main className='min-w-0 flex-1 overflow-y-auto px-6 py-8 md:px-12' ref={articleRef}>
       <article className='docs-prose max-w-3xl'>
         <Markdown className='docs-prose'>{content}</Markdown>
       </article>

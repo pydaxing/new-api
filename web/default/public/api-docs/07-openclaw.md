@@ -10,8 +10,8 @@
 
 ### 第一步：脚本安装（强烈推荐）
 
-<Tabs>
-  <Tab title="MacOS/Linux">
+
+  ### MacOS/Linux
     ☝️ 1. 在终端中运行以下指令将自动安装 OpenClaw ，然后继续下面第二步配置向导：
       ```sh
       curl -fsSL https://openclaw.ai/install.sh | bash
@@ -20,8 +20,8 @@
       ```sh
       openclaw --version
       ```
-  </Tab>
-  <Tab title="Windows (PowerShell)">
+  
+  ### Windows (PowerShell)
     ✌️ 1. 在终端中运行以下指令将自动安装 OpenClaw ，然后继续下面第二步配置向导：
       > 确保已经安装了 WSL2，在 PowerShell 中运行 WSL 进行以下安装。
       
@@ -33,14 +33,14 @@
       ```sh
       openclaw --version
       ```
-  </Tab>
-</Tabs>
+  
+
 
 ### 第二步： 配置 OpenClaw
 
 首先，我们启动交互式配置向导：
 
-```sh
+```bash
 openclaw onboard
 ```
 
@@ -78,10 +78,11 @@ openclaw onboard
 🎉 恭喜您已经完成了 OpenClaw 的配置向导！
 
 > **提示**
-OpenClaw 会自动使用默认浏览器打开 OpenClaw 的网关界面，如网关未启动，可使用以下命令启动：
-```sh
-openclaw gateway  
-```
+>
+> OpenClaw 会自动使用默认浏览器打开 OpenClaw 的网关界面，如网关未启动，可使用以下命令启动：
+> ```bash
+> openclaw gateway  
+> ```
 
 ## OpenClaw接入第三方API接口
 
@@ -93,14 +94,14 @@ openclaw gateway
 
 完成以上安装后，在 OpenClaw 目录文件夹下，会有一个名为 openclaw.json 的文件，可在终端输入以下命令直接打开 OpenClaw 目录文件夹：
 
-```sh
+```bash
 open ~/.openclaw
 ```
 
 1. 打开`openclaw.json`文件，配置 OpenClaw 的第三方 API 与模型名称，可复制以下代码，改一下 apiKey 与模型名称 即可，模型可以根据自己需求修改。
 2. 推荐vapi的令牌使用`claude_kiro_vip`、`claude_kiro`、`claude_cc`这几个分组，价格相对便宜一些。
 
-:::warning 注意 
+> **警告** 注意 
 以下配置中Claude模型的`api`类型选择`anthropic-messages` 才支持模型缓存，走`openai-completions`接口不支持缓存的。
 
 ```json
@@ -183,7 +184,7 @@ open ~/.openclaw
 
 2. 保存openclaw.json配置文件，终端输入以下命令重新启动 OpenClaw：
 
-```sh
+```bash
 openclaw gateway restart
 ```
 

@@ -671,6 +671,21 @@ For commercial licensing, please contact support@quantumnous.com
   border-radius: 0;
   font-size: inherit;
 }
+.docs-prose .shiki {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.docs-prose .shiki code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
 .docs-prose blockquote {
   border-left: 3px solid var(--primary);
   background: color-mix(in oklch, var(--muted) 50%, transparent);

@@ -83,10 +83,10 @@ export function DocsSidebar({
                 <div key={category.title}>
                   <div
                     className={cn(
-                      'mb-1 flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wider',
+                      'mb-1 flex items-center gap-2 rounded-md px-3 py-1.5 text-xs uppercase tracking-wider',
                       isActiveCategory
-                        ? 'text-primary bg-primary/5'
-                        : 'text-muted-foreground'
+                        ? 'text-foreground font-bold'
+                        : 'text-muted-foreground font-semibold'
                     )}
                   >
                     {categoryIcons[category.title]}
@@ -100,12 +100,12 @@ export function DocsSidebar({
                           className={cn(
                             'group relative flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors',
                             activeSlug === item.slug
-                              ? 'bg-primary/10 text-primary font-medium'
-                              : 'text-foreground/70 hover:bg-muted hover:text-foreground'
+                              ? 'text-foreground font-bold'
+                              : 'text-foreground/60 hover:text-foreground'
                           )}
                         >
                           {activeSlug === item.slug && (
-                            <ChevronRight className='text-primary absolute -left-[15px] size-3' />
+                            <ChevronRight className='text-foreground absolute -left-[15px] size-3' />
                           )}
                           <span className='truncate'>{item.title}</span>
                         </button>

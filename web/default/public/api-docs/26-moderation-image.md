@@ -5,7 +5,7 @@
 - **请求方式**: `POST`
 - **请求路径**: `/v1/moderations`
 
-:::tip 该端点模型详细使用方法，可参考 [OpenAI官方文档](https://platform.openai.com/docs/guides/moderation#page-top) :::
+> **提示** 该端点模型详细使用方法，可参考 [OpenAI官方文档](https://platform.openai.com/docs/guides/moderation#page-top)
 
 
 ## 认证方式

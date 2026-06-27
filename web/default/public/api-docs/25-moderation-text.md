@@ -5,7 +5,7 @@
 - **请求方式**: `POST`
 - **请求路径**: `/v1/moderations`
 
-:::tip 该端点模型详细使用方法，可参考 [OpenAI官方文档](https://platform.openai.com/docs/guides/moderation#page-top) :::
+> **提示** 该端点模型详细使用方法，可参考 [OpenAI官方文档](https://platform.openai.com/docs/guides/moderation#page-top)
 
 
 ## 认证方式
@@ -17,7 +17,7 @@
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `model` | string | 是 | 模型名称 - 可使用的模型，可在本站 [模型列表](https://api.gpt.ge/pricing) 中选择 `内容审查` 标签，即可查找可使用的审查模型。 |
+| `model` | string | 是 | 模型名称 - 可使用的模型，可在本站 [模型列表](https://pydaxing.com/pricing) 中选择 `内容审查` 标签，即可查找可使用的审查模型。 |
 | `input` | string | 是 | 审查文本 - 需要进行审查的文本内容 |
 
 ## 请求示例

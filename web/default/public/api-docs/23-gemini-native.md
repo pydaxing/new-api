@@ -5,7 +5,12 @@
 - **请求方式**: `POST`
 - **请求路径**: `/v1beta/models/{model}:{action}`
 
-:::tip 注意：Gemini原生请求参数支持：下划线命名和小驼峰命名。我们平台统一使用小驼峰命名参数，否则部分参数可能无法被正确识别。 例如：tool_config（❌）和toolConfig (✅) :::  本文档只列出基础参数，更多参数和使用示例，请查阅 [Gemini官方开发手册](https://ai.google.dev/models/gemini?hl=zh-cn)
+> **提示**
+>
+> 注意：Gemini原生请求参数支持：下划线命名和小驼峰命名。我们平台统一使用小驼峰命名参数，否则部分参数可能无法被正确识别。
+> 例如：tool_config（❌）和toolConfig (✅)
+
+本文档只列出基础参数，更多参数和使用示例，请查阅 [Gemini官方开发手册](https://ai.google.dev/models/gemini?hl=zh-cn)
 
 
 ## 认证方式

@@ -5,7 +5,18 @@
 - **请求方式**: `POST`
 - **请求路径**: `/v1/messages`
 
-:::tip Claude模型同时支持OpenAI请求格式与官方请求格式。 官方请求格式只列出常用参数，更详细的请求参数请阅读 [claude官方文档](https://docs.anthropic.com/zh-CN/api/getting-started)  走OpenAI格式 将不会计算缓存，走官方格式会完全走缓存计费方式。  [官方缓存使用与说明](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching) :::  支持Claude原生请求的模型： - cld-、claude-开头的所有模型 - kimi-k2-0711-preview或更高版本 - qwen3-coder-plus - glm-4.5或更高版本
+> **提示**
+>
+> Claude模型同时支持OpenAI请求格式与官方请求格式。
+> 官方请求格式只列出常用参数，更详细的请求参数请阅读 [claude官方文档](https://docs.anthropic.com/zh-CN/api/getting-started)
+> 
+> 走OpenAI格式 将不会计算缓存，走官方格式会完全走缓存计费方式。  [官方缓存使用与说明](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching)
+
+支持Claude原生请求的模型：
+- cld-、claude-开头的所有模型
+- kimi-k2-0711-preview或更高版本
+- qwen3-coder-plus
+- glm-4.5或更高版本
 
 
 ## 认证方式

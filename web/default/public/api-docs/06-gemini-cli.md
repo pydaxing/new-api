@@ -6,7 +6,7 @@
 
 使用 npm 全局安装 Gemini CLI：
 
-```sh
+```bash
 npm install -g @google/gemini-cli
 ```
 
@@ -25,19 +25,19 @@ npm install -g @google/gemini-cli
 
 **Windows**
 
-```sh
+```bash
 C:\Users\<您的用户名>\.gemini\.env
 ```
 
 **MacOs / Linux**
 
-```sh
+```bash
 ~/.gemini/.env
 ```
 
 如果 `.gemini` 目录不存在，请先手动创建。然后在 `.env` 文件中添加以下内容：
 
-```shell
+```bash
 GOOGLE_GEMINI_BASE_URL=https://api.v3.cm/
 ```
 
@@ -260,7 +260,7 @@ GOOGLE_GEMINI_BASE_URL=https://api.v3.cm/
 
 在终端中执行以下命令：
 
-```sh
+```bash
 gemini
 ```
 
@@ -275,7 +275,7 @@ gemini
 
 置完成后，您可以直接在终端中使用 Gemini CLI：
 
-```shell
+```bash
 # 启动交互式聊天
 gemini
 

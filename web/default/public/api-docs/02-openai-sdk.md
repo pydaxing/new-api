@@ -1,14 +1,15 @@
 # OpenAI官方SDK使用教程
 
 > **提示**
-我们的API，完全兼容OpenAI接口协议，支持无缝对接各种支持OpenAI接口的应用。
-注意： 所有聊天模型（包括非openai模型）都支持openai官方库，请求url和格式请都遵循openai的请求方式。
-参考：[官方开发文档](https://platform.openai.com/docs/introduction/overview)
-
-Cluade模型同时支持官方与OpenAi两种请求方式。
-
-请求接口时将 `https://api.openai.com` 改为我们的API地址（在 `API网站` -> `控制台` 中可查看API地址） 
-你的KEY要与API网站对应，千万别将混合站点与官转站点弄混了。
+>
+> 我们的API，完全兼容OpenAI接口协议，支持无缝对接各种支持OpenAI接口的应用。
+> 注意： 所有聊天模型（包括非openai模型）都支持openai官方库，请求url和格式请都遵循openai的请求方式。
+> 参考：[官方开发文档](https://platform.openai.com/docs/introduction/overview)
+> 
+> Cluade模型同时支持官方与OpenAi两种请求方式。
+> 
+> 请求接口时将 `https://api.openai.com` 改为我们的API地址（在 `API网站` -> `控制台` 中可查看API地址） 
+> 你的KEY要与API网站对应，千万别将混合站点与官转站点弄混了。
 
 ## OpenAi官方python库
 
@@ -17,7 +18,7 @@ Cluade模型同时支持官方与OpenAi两种请求方式。
 
 ### 安装
 
-```sh
+```bash
 pip install openai
 ```
 
@@ -55,7 +56,7 @@ print(completion.choices[0].message.content)
 
 ### 安装
 
-```sh
+```bash
 npm install openai
 ```
 

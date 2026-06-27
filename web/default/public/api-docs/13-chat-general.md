@@ -5,7 +5,8 @@
 - **请求方式**: `POST`
 - **请求路径**: `/v1/chat/completions`
 
-只提供简单的请求示例，更详细的API接口使用说明 [请阅读官方文档](https://platform.openai.com/docs/api-reference/chat) 注意：OpenAI、Claude、Gemini...等聊天模型均使用该接口格式。
+只提供简单的请求示例，更详细的API接口使用说明 [请阅读官方文档](https://platform.openai.com/docs/api-reference/chat)
+注意：OpenAI、Claude、Gemini...等聊天模型均使用该接口格式。
 
 
 ## 认证方式

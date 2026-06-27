@@ -58,7 +58,7 @@ Claude Code接入方法：
 
 我们可能希望在使用过程中切换模型，可以使用以下命令:
 
-```sh
+```bash
 # 修改全局模型变量
 claude config set --global env '{"ANTHROPIC_MODEL": "claude-opus-4-6"}'
 ```

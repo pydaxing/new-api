@@ -5,7 +5,15 @@
 - **请求方式**: `POST`
 - **请求路径**: `/v1/chat/completions`
 
-可调用OpenAI官网所有GPTs，查看 [GPTs合集](https://www.gptshunter.com/)   将GPTs的ID，传入模型。模型名称：gpt-4-gizmo-(gizmo_id)  比如这个gpts：https://chat.openai.com/g/g-bo0FiWLY7-researchgpt  就填模型名称：`gpt-4-gizmo-g-bo0FiWLY7`  如果您使用的是utools的`GPT.好友插件`，可以将整个GPTs地址复制到插件的模型名称选择处，会自动提取模型名称。
+可调用OpenAI官网所有GPTs，查看 [GPTs合集](https://www.gptshunter.com/) 
+
+将GPTs的ID，传入模型。模型名称：gpt-4-gizmo-(gizmo_id)
+
+比如这个gpts：https://chat.openai.com/g/g-bo0FiWLY7-researchgpt
+
+就填模型名称：`gpt-4-gizmo-g-bo0FiWLY7`
+
+如果您使用的是utools的`GPT.好友插件`，可以将整个GPTs地址复制到插件的模型名称选择处，会自动提取模型名称。
 
 
 ## 认证方式
