@@ -239,7 +239,7 @@ export function RechargeFormCard({
                           key={index}
                           variant='outline'
                           className={cn(
-                            'flex min-h-[100px] flex-col items-start justify-between rounded-lg px-3 py-3 text-left whitespace-normal sm:px-4 sm:py-3.5',
+                            'flex min-h-[116px] flex-col items-start justify-between rounded-lg px-3 py-3 text-left whitespace-normal sm:px-4 sm:py-3.5',
                             selectedPreset === preset.value
                               ? 'border-foreground bg-foreground/5 dark:border-foreground dark:bg-foreground/10'
                               : 'border-muted'
@@ -272,7 +272,7 @@ export function RechargeFormCard({
               )}
 
               <div className='space-y-2.5 sm:space-y-3'>
-                <div className='grid grid-cols-[minmax(0,1fr)_minmax(110px,0.55fr)] gap-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center'>
+                <div className='grid grid-cols-2 gap-2 lg:items-center'>
                   <div className='bg-muted/30 flex min-h-9 items-center justify-between gap-2 rounded-md border px-3 lg:min-w-52'>
                     <span className='text-muted-foreground truncate text-xs'>
                       {t('充值金额:')}
