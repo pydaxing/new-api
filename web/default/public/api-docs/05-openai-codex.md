@@ -42,7 +42,7 @@ codex --version
 
 ### 1.在v-api平台注册并充值
 
-进入网站 https://api.v3.cm 进行注册并充值，然后在“令牌管理”页面，复制apikey，后续需要用到。
+进入网站 https://pydaxing.com 进行注册并充值，然后在“令牌管理”页面，复制apikey，后续需要用到。
 
 ### 2.codex配置文件config.toml
 
@@ -63,7 +63,7 @@ model_reasoning_effort = "low" # 思考级别 low medium（默认） high minima
 # 供应商设置
 [model_providers.vapi]
 name = "VAPI"
-base_url = "https://api.v3.cm/v1"
+base_url = "https://pydaxing.com/v1"
 env_key = "V_API_KEY"    # 保留这个值，不需要替换为apikey
 wire_api = "responses" # 使用 /v1/responses 端点
 query_params = {}

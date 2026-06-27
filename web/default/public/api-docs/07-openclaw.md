@@ -88,7 +88,7 @@ openclaw onboard
 
 ### 第三方ApiKey获取
 
-进入网站 https://api.v3.cm 进行注册并充值，然后在“令牌管理”页面，复制apikey，后续需要用它来接入Claude code。建议新建令牌->令牌分组选择：`claude_cc`分组，或更便宜的分组，如果选择`claude分组`成本可能很贵。
+进入网站 https://pydaxing.com 进行注册并充值，然后在“令牌管理”页面，复制apikey，后续需要用它来接入Claude code。建议新建令牌->令牌分组选择：`claude_cc`分组，或更便宜的分组，如果选择`claude分组`成本可能很贵。
 
 ### 接入第三方ApiKey
 

@@ -14,7 +14,7 @@ npm install -g @google/gemini-cli
 
 **在v-api平台注册并充值**
 
-进入网站 https://api.v3.cm 进行注册并充值，然后在“令牌管理”页面，复制apikey，后续需要用到。
+进入网站 https://pydaxing.com 进行注册并充值，然后在“令牌管理”页面，复制apikey，后续需要用到。
 
 
 ## 配置 Gemini CLI
@@ -38,10 +38,10 @@ C:\Users\<您的用户名>\.gemini\.env
 如果 `.gemini` 目录不存在，请先手动创建。然后在 `.env` 文件中添加以下内容：
 
 ```bash
-GOOGLE_GEMINI_BASE_URL=https://api.v3.cm/
+GOOGLE_GEMINI_BASE_URL=https://pydaxing.com/
 ```
 
-如果不成功，将`GOOGLE_GEMINI_BASE_URL`改成`https://api.v3.cm`
+如果不成功，将`GOOGLE_GEMINI_BASE_URL`改成`https://pydaxing.com`
 
 ### 步骤 2：配置模型设置
 

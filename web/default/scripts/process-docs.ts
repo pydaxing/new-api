@@ -14,6 +14,8 @@ const URL_REPLACEMENTS = [
   ['https://api.gpt.ge', SITE_URL],
   ['https://api-gpt-ge.apifox.cn', SITE_URL],
   ['http://api.gpt.ge', SITE_URL],
+  ['https://api.v3.cm', SITE_URL],
+  ['http://api.v3.cm', SITE_URL],
 ] as const
 
 function replaceUrls(content: string): string {

@@ -13,7 +13,7 @@ Claude Code接入方法：
 
 ## 三、ApiKey获取
 
-进入网站 https://api.v3.cm 进行注册并充值，然后在“令牌管理”页面，复制apikey，后续需要用它来接入Claude code。建议新建令牌->令牌分组选择：`claude_cc`分组，价格比较便宜。
+进入网站 https://pydaxing.com 进行注册并充值，然后在“令牌管理”页面，复制apikey，后续需要用它来接入Claude code。建议新建令牌->令牌分组选择：`claude_cc`分组，价格比较便宜。
 
 ## 四、项目配置
 
@@ -43,7 +43,7 @@ Claude Code接入方法：
 ```json
 {
     "env": {
-      "ANTHROPIC_BASE_URL": "https://api.v3.cm",
+      "ANTHROPIC_BASE_URL": "https://pydaxing.com",
       "ANTHROPIC_AUTH_TOKEN": "sk-xxxxx",
       "ANTHROPIC_MODEL": "claude-sonnet-4-6",
       "ANTHROPIC_SMALL_FAST_MODEL": "claude-haiku-4-5-20251001",
