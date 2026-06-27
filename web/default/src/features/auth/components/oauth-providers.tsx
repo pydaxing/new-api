@@ -157,7 +157,7 @@ export function OAuthProviders({
               type='button'
               disabled={disabled || isLoading || extraDisabled}
               onClick={onClick}
-              className='h-11 w-full justify-center gap-2 rounded-lg'
+              className='h-11 w-full justify-center gap-2 rounded-full'
             >
               {icon}
               {label}

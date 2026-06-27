@@ -103,7 +103,7 @@ export function ForgotPasswordForm({
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder='name@example.com' {...field} />
+                <Input placeholder='name@example.com' className='h-11 rounded-full bg-muted/50 px-4' {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -112,7 +112,7 @@ export function ForgotPasswordForm({
 
         <Button
           type='submit'
-          className='mt-2'
+          className='mt-2 h-11 w-full rounded-full'
           disabled={isLoading || isActive || !turnstileReady}
         >
           {isActive

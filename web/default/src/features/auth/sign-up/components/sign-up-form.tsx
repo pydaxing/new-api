@@ -237,7 +237,7 @@ export function SignUpForm({
             <FormItem>
               <FormLabel>{t('Username')}</FormLabel>
               <FormControl>
-                <Input placeholder={t('Enter your username')} {...field} />
+                <Input placeholder={t('Enter your username')} className='h-11 rounded-full bg-muted/50 px-4' {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -254,6 +254,7 @@ export function SignUpForm({
               <FormControl>
                 <PasswordInput
                   placeholder={t('Enter password (8-20 characters)')}
+                  className='h-11 rounded-full bg-muted/50 px-4'
                   {...field}
                 />
               </FormControl>
@@ -270,7 +271,7 @@ export function SignUpForm({
             <FormItem>
               <FormLabel>{t('Confirm password')}</FormLabel>
               <FormControl>
-                <PasswordInput placeholder={t('Confirm password')} {...field} />
+                <PasswordInput placeholder={t('Confirm password')} className='h-11 rounded-full bg-muted/50 px-4' {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -293,6 +294,7 @@ export function SignUpForm({
                     <Input
                       placeholder={t('name@example.com')}
                       type='email'
+                      className='h-11 rounded-full bg-muted/50 px-4'
                       {...field}
                     />
                   </FormControl>
@@ -306,6 +308,7 @@ export function SignUpForm({
               <div className='flex-1'>
                 <Input
                   placeholder={t('Verification code')}
+                  className='h-11 rounded-full bg-muted/50 px-4'
                   value={verificationCode}
                   onChange={(e) => setVerificationCode(e.target.value)}
                 />
@@ -313,6 +316,7 @@ export function SignUpForm({
               <Button
                 variant='outline'
                 type='button'
+                className='h-11 rounded-full'
                 disabled={
                   isLoading ||
                   isSendingCode ||
@@ -354,7 +358,7 @@ export function SignUpForm({
         {/* Submit Button */}
         <Button
           type='submit'
-          className='mt-2 w-full justify-center gap-2'
+          className='mt-2 h-11 w-full justify-center gap-2 rounded-full'
           disabled={
             isLoading ||
             (requiresLegalConsent && !agreedToLegal) ||

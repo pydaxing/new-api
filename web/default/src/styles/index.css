@@ -605,3 +605,95 @@ For commercial licensing, please contact support@quantumnous.com
     animation: none !important;
   }
 }
+
+/* Auth page sci-fi animations */
+.auth-grid {
+  background-image:
+    linear-gradient(rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: auth-grid-move 20s linear infinite;
+}
+
+@keyframes auth-grid-move {
+  0% { background-position: 0 0; }
+  100% { background-position: 60px 60px; }
+}
+
+.auth-glow-1 {
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 70%);
+  animation: auth-glow-pulse 4s ease-in-out infinite;
+}
+.auth-glow-2 {
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, transparent 70%);
+  animation: auth-glow-pulse 6s ease-in-out infinite 1s;
+}
+.auth-glow-3 {
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%);
+  animation: auth-glow-pulse 5s ease-in-out infinite 2s;
+}
+
+@keyframes auth-glow-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+.auth-orbit-1 {
+  animation: auth-orbit-spin 20s linear infinite;
+}
+.auth-orbit-2 {
+  animation: auth-orbit-spin 35s linear infinite reverse;
+}
+.auth-orbit-3 {
+  animation: auth-orbit-spin 50s linear infinite;
+}
+
+@keyframes auth-orbit-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.auth-particle {
+  animation: auth-particle-float 6s ease-in-out infinite;
+}
+
+@keyframes auth-particle-float {
+  0%, 100% { transform: translateY(0) translateX(0); opacity: 0.4; }
+  25% { transform: translateY(-30px) translateX(15px); opacity: 1; }
+  50% { transform: translateY(-10px) translateX(-20px); opacity: 0.6; }
+  75% { transform: translateY(20px) translateX(10px); opacity: 0.8; }
+}
+
+.auth-scan-line {
+  animation: auth-scan 4s ease-in-out infinite;
+}
+
+@keyframes auth-scan {
+  0% { top: -2px; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+.auth-logo-glow::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  background: conic-gradient(from 0deg, rgba(56, 189, 248, 0.3), rgba(139, 92, 246, 0.3), rgba(56, 189, 248, 0.3));
+  animation: auth-logo-rotate 3s linear infinite;
+  opacity: 0.6;
+}
+.auth-logo-glow::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%);
+  animation: auth-glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes auth-logo-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

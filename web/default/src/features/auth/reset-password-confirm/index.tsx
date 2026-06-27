@@ -107,10 +107,10 @@ export function ResetPasswordConfirm({
     <AuthLayout>
       <div className='w-full space-y-8'>
         <div className='space-y-2'>
-          <h2 className='text-center text-2xl font-semibold tracking-tight sm:text-left'>
+          <h2 className='text-center text-2xl font-semibold tracking-tight'>
             {t('Reset password')}
           </h2>
-          <p className='text-muted-foreground text-left text-sm sm:text-base'>
+          <p className='text-muted-foreground text-center text-sm'>
             {newPassword
               ? t('auth.resetPasswordConfirm.success')
               : t('auth.resetPasswordConfirm.description')}
@@ -133,6 +133,7 @@ export function ResetPasswordConfirm({
               type='email'
               value={email || ''}
               disabled
+              className='h-11 rounded-full bg-muted/50 px-4'
               placeholder={t('Waiting for email...')}
             />
           </div>
@@ -145,7 +146,7 @@ export function ResetPasswordConfirm({
                   id='password'
                   value={newPassword}
                   disabled
-                  className='font-mono'
+                  className='h-11 rounded-full bg-muted/50 px-4 font-mono'
                 />
                 <Button
                   type='button'
@@ -167,7 +168,7 @@ export function ResetPasswordConfirm({
           )}
 
           <Button
-            className='w-full'
+            className='h-11 w-full rounded-full'
             onClick={
               newPassword
                 ? () => navigate({ to: '/sign-in', replace: true })

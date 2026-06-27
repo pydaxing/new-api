@@ -26,7 +26,7 @@ export function ForgotPassword() {
   return (
     <AuthLayout>
       <div className='w-full space-y-8'>
-        <div className='space-y-3 text-center'>
+        <div className='space-y-2 text-center'>
           <h2 className='text-2xl font-semibold tracking-tight'>
             {t('Forgot password')}
           </h2>
@@ -35,18 +35,27 @@ export function ForgotPassword() {
               'Enter your registered email and we will send you a link to reset your password.'
             )}
           </p>
-          <p className='text-muted-foreground text-sm'>
-            {t("Don't have an account?")}{' '}
-            <Link
-              to='/sign-up'
-              className='hover:text-primary font-medium underline underline-offset-4'
-            >
-              {t('Sign up')}
-            </Link>
-          </p>
         </div>
 
         <ForgotPasswordForm className='space-y-0' />
+
+        <p className='text-muted-foreground mt-6 text-center text-sm'>
+          {t('Remember your password?')}{' '}
+          <Link
+            to='/sign-in'
+            className='hover:text-primary font-medium underline underline-offset-4'
+          >
+            {t('Sign in')}
+          </Link>
+          {' · '}
+          {t("Don't have an account?")}{' '}
+          <Link
+            to='/sign-up'
+            className='hover:text-primary font-medium underline underline-offset-4'
+          >
+            {t('Sign up')}
+          </Link>
+        </p>
       </div>
     </AuthLayout>
   )
