@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useMemo } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { User, Wallet, LogOut, Settings } from 'lucide-react'
+import { User, Wallet, LogOut, Settings, Headset } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/stores/auth-store'
 import { getUserAvatarFallback, getUserAvatarStyle } from '@/lib/avatar'
@@ -132,6 +132,19 @@ export function ProfileDropdown() {
               {t('System Settings')}
             </DropdownMenuItem>
           )}
+
+          <DropdownMenuSeparator />
+
+          <div className='px-2 py-2'>
+            <div className='text-muted-foreground flex items-center gap-2 text-xs'>
+              <Headset className='size-3.5' />
+              <span className='font-medium'>{t('Contact Support')}</span>
+            </div>
+            <div className='text-muted-foreground mt-1 space-y-0.5 pl-[22px] text-xs'>
+              <p>pydaxing@gmail.com</p>
+              <p>QQ: 1972768884</p>
+            </div>
+          </div>
 
           <DropdownMenuSeparator />
 
