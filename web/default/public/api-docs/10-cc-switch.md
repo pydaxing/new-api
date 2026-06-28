@@ -54,7 +54,7 @@ CC Switch 是AI CLI 一体化管理平台，他可以统一管理 Claude Code、
 
 ![image.png](https://api.apifox.com/api/v1/projects/5076588/resources/666155/image-preview)
 
-选择预设类型（如 NewAPI 或 自定义网关）。
+选择预设类型（如 派大星 API 或 自定义网关）。
 依次填入 名称、API 地址 (https://pydaxing.com) 和 API Key。
 
 |表单项|值|

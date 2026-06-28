@@ -18,9 +18,18 @@ const URL_REPLACEMENTS = [
   ['http://api.v3.cm', SITE_URL],
 ] as const
 
+const TEXT_REPLACEMENTS = [
+  ['NewAPI', '派大星 API'],
+  ['New API', '派大星 API'],
+  ['New Api', '派大星 API'],
+] as const
+
 function replaceUrls(content: string): string {
   let result = content
   for (const [from, to] of URL_REPLACEMENTS) {
+    result = result.replaceAll(from, to)
+  }
+  for (const [from, to] of TEXT_REPLACEMENTS) {
     result = result.replaceAll(from, to)
   }
   return result
