@@ -49,6 +49,7 @@ import { useUpdateOption } from '../hooks/use-update-option'
 
 const quotaSchema = z.object({
   QuotaForNewUser: z.coerce.number().min(0),
+  GroupForNewUser: z.string(),
   PreConsumedQuota: z.coerce.number().min(0),
   QuotaForInviter: z.coerce.number().min(0),
   QuotaForInvitee: z.coerce.number().min(0),
@@ -140,6 +141,26 @@ export function QuotaSettingsSection({
                   </FormControl>
                   <FormDescription>
                     {t('Initial quota given to new users')}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='GroupForNewUser'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('New User Default Group')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder={t('e.g. default')}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    {t('Group assigned to newly registered users')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

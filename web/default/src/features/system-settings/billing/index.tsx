@@ -26,6 +26,7 @@ import {
 
 const defaultBillingSettings: BillingSettings = {
   QuotaForNewUser: 0,
+  GroupForNewUser: '标准',
   PreConsumedQuota: 0,
   QuotaForInviter: 0,
   QuotaForInvitee: 0,
