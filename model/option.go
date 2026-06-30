@@ -502,17 +502,25 @@ func updateOptionMap(key string, value string) (err error) {
 	case "TurnstileSecretKey":
 		common.TurnstileSecretKey = value
 	case "QuotaForNewUser":
-		common.QuotaForNewUser, _ = strconv.Atoi(value)
+		if f, err := strconv.ParseFloat(value, 64); err == nil {
+			common.QuotaForNewUser = int(f)
+		}
 	case "GroupForNewUser":
 		common.GroupForNewUser = value
 	case "QuotaForInviter":
-		common.QuotaForInviter, _ = strconv.Atoi(value)
+		if f, err := strconv.ParseFloat(value, 64); err == nil {
+			common.QuotaForInviter = int(f)
+		}
 	case "QuotaForInvitee":
-		common.QuotaForInvitee, _ = strconv.Atoi(value)
+		if f, err := strconv.ParseFloat(value, 64); err == nil {
+			common.QuotaForInvitee = int(f)
+		}
 	case "QuotaRemindThreshold":
 		common.QuotaRemindThreshold, _ = strconv.Atoi(value)
 	case "PreConsumedQuota":
-		common.PreConsumedQuota, _ = strconv.Atoi(value)
+		if f, err := strconv.ParseFloat(value, 64); err == nil {
+			common.PreConsumedQuota = int(f)
+		}
 	case "ModelRequestRateLimitCount":
 		setting.ModelRequestRateLimitCount, _ = strconv.Atoi(value)
 	case "ModelRequestRateLimitDurationMinutes":

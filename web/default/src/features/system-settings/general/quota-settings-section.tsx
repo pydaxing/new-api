@@ -64,13 +64,22 @@ const quotaSchema = z.object({
 
 type QuotaFormValues = z.infer<typeof quotaSchema>
 
+const QUOTA_FIELDS = [
+  'QuotaForNewUser',
+  'PreConsumedQuota',
+  'QuotaForInviter',
+  'QuotaForInvitee',
+] as const
+
 type QuotaSettingsSectionProps = {
   defaultValues: QuotaFormValues
+  quotaPerUnit: number
   complianceConfirmed?: boolean
 }
 
 export function QuotaSettingsSection({
   defaultValues,
+  quotaPerUnit,
   complianceConfirmed = true,
 }: QuotaSettingsSectionProps) {
   const { t } = useTranslation()
@@ -83,6 +92,17 @@ export function QuotaSettingsSection({
       )
     }
 
+  const toUsd = (internalValue: number) => internalValue / quotaPerUnit
+  const toInternal = (usdValue: number) => Math.round(usdValue * quotaPerUnit)
+
+  const displayValues = {
+    ...defaultValues,
+    QuotaForNewUser: toUsd(defaultValues.QuotaForNewUser),
+    PreConsumedQuota: toUsd(defaultValues.PreConsumedQuota),
+    QuotaForInviter: toUsd(defaultValues.QuotaForInviter),
+    QuotaForInvitee: toUsd(defaultValues.QuotaForInvitee),
+  }
+
   const { form, handleSubmit, isDirty, isSubmitting } =
     useSettingsForm<QuotaFormValues>({
       resolver: zodResolver(quotaSchema) as Resolver<
@@ -90,12 +110,17 @@ export function QuotaSettingsSection({
         unknown,
         QuotaFormValues
       >,
-      defaultValues,
+      defaultValues: displayValues,
       onSubmit: async (_data, changedFields) => {
         for (const [key, value] of Object.entries(changedFields)) {
+          const isQuotaField = (QUOTA_FIELDS as readonly string[]).includes(key)
+          const finalValue =
+            isQuotaField && typeof value === 'number'
+              ? toInternal(value)
+              : value
           await updateOption.mutateAsync({
             key,
-            value: value as string | number | boolean,
+            value: finalValue as string | number | boolean,
           })
         }
       },
@@ -128,10 +153,11 @@ export function QuotaSettingsSection({
               name='QuotaForNewUser'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('New User Quota')}</FormLabel>
+                  <FormLabel>{t('New User Quota')} ($)</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
+                      step='0.01'
                       value={field.value ?? ''}
                       onChange={handleNumberChange(field.onChange)}
                       name={field.name}
@@ -172,10 +198,11 @@ export function QuotaSettingsSection({
               name='PreConsumedQuota'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Pre-Consumed Quota')}</FormLabel>
+                  <FormLabel>{t('Pre-Consumed Quota')} ($)</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
+                      step='0.01'
                       value={field.value ?? ''}
                       onChange={handleNumberChange(field.onChange)}
                       name={field.name}
@@ -196,10 +223,11 @@ export function QuotaSettingsSection({
               name='QuotaForInviter'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Inviter Reward')}</FormLabel>
+                  <FormLabel>{t('Inviter Reward')} ($)</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
+                      step='0.01'
                       value={field.value ?? ''}
                       onChange={handleNumberChange(field.onChange)}
                       name={field.name}
@@ -220,10 +248,11 @@ export function QuotaSettingsSection({
               name='QuotaForInvitee'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Invitee Reward')}</FormLabel>
+                  <FormLabel>{t('Invitee Reward')} ($)</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
+                      step='0.01'
                       value={field.value ?? ''}
                       onChange={handleNumberChange(field.onChange)}
                       name={field.name}

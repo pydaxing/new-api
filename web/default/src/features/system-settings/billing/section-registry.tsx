@@ -56,6 +56,7 @@ const BILLING_SECTIONS = [
     titleKey: 'Quota Settings',
     build: (settings: BillingSettings) => (
       <QuotaSettingsSection
+        quotaPerUnit={settings.QuotaPerUnit || 500000}
         defaultValues={{
           QuotaForNewUser: settings.QuotaForNewUser,
           GroupForNewUser: settings.GroupForNewUser,
